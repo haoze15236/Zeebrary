@@ -2,7 +2,7 @@
 ## 安装和使用
 
 **安装教程：**[https://blog.csdn.net/qq_40722827/article/details/99976121](https://blog.csdn.net/qq_40722827/article/details/99976121)
-**使用教程：**[https://www.jianshu.com/p/58b1a7551ad7](https://www.jianshu.com/p/58b1a7551ad7)
+**使用教程：**[https://www.jianshu.com/p/58b1a7551ad7
 
 ## 错误
 **1. unable ping server localhost:1099**

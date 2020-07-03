@@ -16,11 +16,12 @@
 - **批量插入**
 
 ```xml
-<insert id="insertBatch" useGeneratedKeys="true" keyProperty="employeeId">
+<insert id="insertBatch" useGeneratedKeys="true" keyProperty="unitId">
     <if test="list != null and list.size > 0">
-        INSERT INTO exp_employee(EMPLOYEE_CODE) VALUES
-        <foreach collection="list" item="expEmployee" index="index" separator=",">
-            (#{expEmployee.employeeCode})
+        INSERT INTO exp_org_unit(UNIT_CODE,CREATED_BY,CREATION_DATE,         LAST_UPDATED_BY,LAST_UPDATE_DATE,OBJECT_VERSION_NUMBER,REQUEST_ID,PROGRAM_ID,
+        LAST_UPDATE_LOGIN) VALUES
+        <foreach collection="list" item="item" index="index" separator=",">
+            (#{item.unitCode},#{request.userId} ,now() ,#{request.userId},now() ,1 ,null ,null ,#{request.userId})
         </foreach>
     </if>
 </insert>
@@ -41,7 +42,10 @@
             ,OBJECT_VERSION_NUMBER = OBJECT_VERSION_NUMBER + 1
             WHERE 1=1
             AND EMPLOYEE_ID = #{item.employeeId}
-            AND OBJECT_VERSION_NUMBER = #{item.objectVersionNumber}
+            AND OBJECT_VERSION_NUMBER = #{item.objectVersionNumber};
+            update exp_org_unit_tl
+                set DESCRIPTION = IFNULL(#{item.description},DESCRIPTION)
+                where UNIT_ID = #{item.unitId}
         </foreach>
     </if>
 </update>
