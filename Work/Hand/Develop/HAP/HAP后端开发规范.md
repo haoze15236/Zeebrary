@@ -17,7 +17,17 @@
 
 - 可使用[excel表模板](D:\项目\新潮\技术总结\表设计模板1.0.xls)生成表，便于项目管理二开表
 
+- 表字段名使用大写，下划线格式，字段长度参考如下
 
+  | 字段名         | 字段用途             | 字段长度      |
+  | -------------- | -------------------- | ------------- |
+  | xxx_CODE       | 代码字段             | varchar(10)   |
+  | xxx_NAME       | 描述字段             | varchar(30)   |
+  | xxx_DESCIPTION | 备注字段             | varchar(2000) |
+  | xxx_AMOUT      | 金额字段             | decimal(10,2) |
+  | xxx_ID         | 各种id或者number字段 | bigInt(10)    |
+
+  
 
 # Java开发规范
 
@@ -67,6 +77,20 @@ this.url = sysParameterService.queryParamValueByCode("CUX_K3CLOUD_INTERFACE_URL"
         
 ```
 
+- <span Style="color:red">禁止写死ID来获取默认值，一般是通过定义Code去匹配，获取ID。</span>
+
+
+
+## 项目配置
+
+- jvm启动参数
+
+```shell
+-Dfile.encoding=UTF-8 -Duser.region=CN -Duser.language=zh
+```
+
+
+
 # 接口开发
 
 ## 查询其他系统数据
@@ -89,12 +113,11 @@ syncData(){
     .begin();
     //查询接口表里失效状态数据,为来源系统真实删除的数据，deletList
     deleteBatch(deletList);
-	delete 接口表所有数据;
 }
 //业务处理接口数据
 public void process(List reqList){
 	//查询业务表对应数据,返回
-    List<业务表DTO> selList;
+    Map<key,List<业务表DTO>> selList;
     reqList.forEach(x->{
         try{
             if(selList.contain(x.code)){
@@ -108,24 +131,24 @@ public void process(List reqList){
             return;
         }
     });
-    
-	需要同步数据:updateList
-	需要插入数据:insertList
+	//需要同步数据:updateList需要插入数据:insertList
     updateBatch(updateList);
     insertBatch(insertList);
+    //记录到业务接口表
+    insertItf(reqList);
 }
 
 public void initRefData() {
     //统一修改接口表数据状态为失效
 }
-
+//更新业务数据
 public void updateBatch(List){
 }
-
-public void deleteBatch(List){
-}
-
+//插入业务数据
 public void insertBatch(List){
+}
+//删除业务数据
+public void deleteBatch(List){
 }
 ```
 
@@ -197,3 +220,11 @@ public void insertBatch(List){
        				.collect(Collectors.toList());
    ```
 
+## 发布接口
+
+### 规范
+
+1. 记录入站请求，使用@HapInbound注解，配合前台接口定义功能，可以在前台调用记录里面看到具体的调用记录。
+2. 
+
+## 请求外部系统

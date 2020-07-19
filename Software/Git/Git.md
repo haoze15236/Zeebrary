@@ -70,7 +70,7 @@ git merge --no-ff -m "merge with no-ff" branchname
 ##合并一个版本的修改
 git merge --squash <commit_id>
 # 合并出现没有关联的错误时加后缀--allow-unrelated-histories
-#从分支branchname的commit_id合并到当前分支
+#将分支branchname的commit_id在当前分支提交生成一个commit
 git cherry-pick <branchname> <commit_id>
 
 #重建分支.
@@ -79,6 +79,7 @@ git rebase
 git rebase --onto <branch1> <branch2> <branch3>
 ```
 [merge --no-ff cherry-pick操作详细图解](https://editor.csdn.net/md/?articleId=103032475)
+
 #### 分支节点
 ```shell
 #将stage的所有修改提交到当前(head指向的)分支,形成一个分支的节点
