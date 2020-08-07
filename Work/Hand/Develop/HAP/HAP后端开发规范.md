@@ -18,20 +18,18 @@
 - 可使用[excel表模板](D:\项目\新潮\技术总结\表设计模板1.0.xls)生成表，便于项目管理二开表
 
 - 表字段名使用大写，下划线格式，字段长度参考如下
+| 字段名         | 字段用途             | 字段长度      |
+| -------------- | -------------------- | ------------- |
+| xxx_CODE       | 代码字段             | varchar(10)   |
+| xxx_NAME       | 描述字段             | varchar(30)   |
+| xxx_DESCIPTION | 备注字段             | varchar(2000) |
+| xxx_AMOUT      | 金额字段             | decimal(10,2) |
+| xxx_ID         | 各种id或者number字段 | bigInt(10)    |
 
-  | 字段名         | 字段用途             | 字段长度      |
-  | -------------- | -------------------- | ------------- |
-  | xxx_CODE       | 代码字段             | varchar(10)   |
-  | xxx_NAME       | 描述字段             | varchar(30)   |
-  | xxx_DESCIPTION | 备注字段             | varchar(2000) |
-  | xxx_AMOUT      | 金额字段             | decimal(10,2) |
-  | xxx_ID         | 各种id或者number字段 | bigInt(10)    |
-
-  
 
 # Java开发规范
 
-[阿里巴巴Java开发手册](D:\git\doc\阿里巴巴Java开发手册.pdf)
+主要规范可参考：[阿里巴巴Java开发手册](D:\git\doc\阿里巴巴Java开发手册.pdf)
 
 ## 空值判断 
 
@@ -73,27 +71,24 @@ CollectionUtils.isEmpty()
 @Autowired
 private ISysParameterService sysParameterService;
 
-this.url = sysParameterService.queryParamValueByCode("CUX_K3CLOUD_INTERFACE_URL", null, null, null, null, null, null, null);
-        
+this.url = sysParameterService.queryParamValueByCode("CUX_K3CLOUD_INTERFACE_URL", null, null, null, null, null, null, null);    
 ```
+
+## 注意事项(重要)
 
 - <span Style="color:red">禁止写死ID来获取默认值，一般是通过定义Code去匹配，获取ID。</span>
 
+# 项目配置
 
-
-## 项目配置
-
-- jvm启动参数
+- jvm启动参数，避免使用服务器默认locale=en_US,导致多语言问题
 
 ```shell
--Dfile.encoding=UTF-8 -Duser.region=CN -Duser.language=zh
+Dfile.encoding=UTF-8 -Duser.region=CN -Duser.language=zh
 ```
-
-
 
 # 接口开发
 
-## 查询其他系统数据
+## 全量查询其他系统数据
 
 ### 伪代码逻辑
 
@@ -103,6 +98,7 @@ syncData(){
     initRefData();
     //请求接口获取请求数据
     List<接口表DTO> reqList;
+    //批量处理数据
     BatchOperateUtils.batch(reqList)
     .action(resposeBatchList -> {
         process(resposeBatchList);
@@ -116,19 +112,20 @@ syncData(){
 }
 //业务处理接口数据
 public void process(List reqList){
+    //删除接口表中对应的请求数据
+    deleteBatch(reqList)
 	//查询业务表对应数据,返回
     Map<key,List<业务表DTO>> selList;
-    reqList.forEach(x->{
-        try{
-            if(selList.contain(x.code)){
-                x.setId(x.id);
-                updateList.add(x);
-            }else{
-                insertList.add(x);
-            }
-        }catch(Exception e){
-            itfList.add(x);
-            return;
+    updateList = null;
+    insertList = null;
+    reqList.forEach(reqDto->{
+        //接口表DTO数据映射业务表DTO数据
+        businessDto = dataMapping(reqDto);
+        if(selList.contain(reqDto.code)){
+            x.setId(reqDto.id);
+            updateList.add(reqDto);
+        }else{
+            insertList.add(x);
         }
     });
 	//需要同步数据:updateList需要插入数据:insertList
@@ -140,6 +137,7 @@ public void process(List reqList){
 
 public void initRefData() {
     //统一修改接口表数据状态为失效
+    invalidAll();
 }
 //更新业务数据
 public void updateBatch(List){
@@ -222,9 +220,6 @@ public void deleteBatch(List){
 
 ## 发布接口
 
-### 规范
-
 1. 记录入站请求，使用@HapInbound注解，配合前台接口定义功能，可以在前台调用记录里面看到具体的调用记录。
-2. 
 
 ## 请求外部系统
