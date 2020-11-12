@@ -26,6 +26,7 @@
 | xxx_AMOUT      | 金额字段             | decimal(10,2) |
 | xxx_ID         | 各种id或者number字段 | bigInt(10)    |
 
+大家以后mapper里面写表名尽量用小写，建表也用小写建立，表里面的固定值用大写，取固定值的时候看情况用lower和upper 这样mybatis和sql能够最大程度兼容其他 名义上说着兼容mysql的类型数据库 如亚马逊云数据库，tidb
 
 # Java开发规范
 
@@ -38,6 +39,8 @@
 ObjectUtils.isEmpty()
 //集合判断是否为null
 CollectionUtils.isEmpty()
+//使用通用mapper的selectOne()方法需要捕获异常,抛出合理的报错
+org.apache.ibatis.exceptions.TooManyResultsException: Expected one result (or null) to be returned by selectOne(), but found: 2
 ```
 
 ## 常量定义
@@ -77,6 +80,8 @@ this.url = sysParameterService.queryParamValueByCode("CUX_K3CLOUD_INTERFACE_URL"
 ## 注意事项(重要)
 
 - <span Style="color:red">禁止写死ID来获取默认值，一般是通过定义Code去匹配，获取ID。</span>
+- 二开功能都需要自己测试，（单条/多条）（保存/更新），需要保证每次修改完代码都重新跑一边4种情况。
+- update语句需要注意，没有走索引的，可能会导致表锁，需要测试！
 
 # 项目配置
 
@@ -87,6 +92,21 @@ Dfile.encoding=UTF-8 -Duser.region=CN -Duser.language=zh
 ```
 
 # 接口开发
+
+hap中标准返回ResponseData对象，回传内容格式为json，具体信息包含以下内容(可修改)：
+
+```json
+{
+    "message": "具体内容",
+    "status": null,
+    "success": false,  //成功状态
+	"code":null,
+	"rows":[obejct{···},object{···}],   //具体的对象数据
+	"total":2
+}
+```
+
+
 
 ## 全量查询其他系统数据
 

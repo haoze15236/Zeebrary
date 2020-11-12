@@ -35,6 +35,9 @@ git status
 
 #保存工作区和暂存区的内容,使用HEAD指向的内容覆盖工作区和暂存区
 git stash
+git stash list
+git stash pop
+git stash drop
 ```
 
 ## 版本库(repository)
