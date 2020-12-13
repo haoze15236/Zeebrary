@@ -82,6 +82,7 @@ this.url = sysParameterService.queryParamValueByCode("CUX_K3CLOUD_INTERFACE_URL"
 - <span Style="color:red">禁止写死ID来获取默认值，一般是通过定义Code去匹配，获取ID。</span>
 - 二开功能都需要自己测试，（单条/多条）（保存/更新），需要保证每次修改完代码都重新跑一边4种情况。
 - update语句需要注意，没有走索引的，可能会导致表锁，需要测试！
+- DTO类不要使用基础数据类型,因为基础数据类型初始化会默认值(比如int,long 默认0),这样持久化会保存一个默认值，可能出现问题。应该使用包装类，比如long使用Long,对应的get,set方法也使用Long
 
 # 项目配置
 

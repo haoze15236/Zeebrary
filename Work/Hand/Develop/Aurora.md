@@ -61,6 +61,18 @@ Aurora.request({
 ```javascript
 Aurora.Masker.mask($au('window的ID').wrap,'$[l:hap.pay_waiting]');
 Aurora.Masker.unmask($au('window的ID').wrap);
+//新开页面
+ new Aurora.Window({
+                id: 'activity_create_window',
+                url: $au('pm_apr_activity_create_modify_link').getUrl() + "?type=add",
+                title: '$[l:pm_apr_activity.activity_new]',
+                side: 'right',
+                fullScreen: true,
+                width: 1020
+            }).on('close', function() {
+                <!--取消页面关闭触发的查询-->
+                $au('pm_apr_activity_result_ds').query();
+            });
 ```
 
 ### 页面嵌套校验必输

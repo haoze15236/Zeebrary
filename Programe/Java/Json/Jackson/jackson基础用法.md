@@ -188,11 +188,7 @@ InputStream input = new FileInputStream("data/car.json");
 Car car = objectMapper.readValue(input, Car.class);
 ```
 
-[回到顶部](https://www.cnblogs.com/guanbin-529/p/11488869.html#_labelTop)
-
 ## 从字节数组中读取对象
-
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
 ```
 ObjectMapper objectMapper = new ObjectMapper();
@@ -205,10 +201,6 @@ byte[] bytes = carJson.getBytes("UTF-8");
 Car car = objectMapper.readValue(bytes, Car.class);
 ```
 
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
-
-[回到顶部](https://www.cnblogs.com/guanbin-529/p/11488869.html#_labelTop)
-
 ## 从JSON数组字符串中读取对象数组 
 
 ```
@@ -218,8 +210,6 @@ ObjectMapper objectMapper = new ObjectMapper();
 
 Car[] cars2 = objectMapper.readValue(jsonArray, Car[].class);
 ```
-
-[回到顶部](https://www.cnblogs.com/guanbin-529/p/11488869.html#_labelTop)
 
 ## 从JSON数组字符串中读取对象列表
 
@@ -231,10 +221,6 @@ ObjectMapper objectMapper = new ObjectMapper（）;
 List <Car> cars1 = objectMapper.readValue（jsonArray，new TypeReference <List <Car >>（）{}）;
 ```
 
- 
-
-[回到顶部](https://www.cnblogs.com/guanbin-529/p/11488869.html#_labelTop)
-
 ## 从JSON字符串中读取映射为map
 
 ```
@@ -245,11 +231,7 @@ Map <String，Object> jsonMap = objectMapper.readValue（jsonObject，
     new TypeReference <Map <String，Object >>（）{}）;
 ```
 
-[回到顶部](https://www.cnblogs.com/guanbin-529/p/11488869.html#_labelTop)
-
 ## 树模型
-
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
 ```
 String carJson =
@@ -266,13 +248,9 @@ try {
 }
 ```
 
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
-
 JSON字符串被解析为`JsonNode`对象而不是`Car`对象，只需将`JsonNode.class`第二个参数传递给`readValue()`方法而不是`Car.class`本教程前面的示例中使用的方法。
 
 该`ObjectMapper`班也有一个特殊的`readTree()`，它总是返回一个方法 `JsonNode`。以下是`JsonNode`使用该`ObjectMapper` `readTree()`方法将JSON解析为a的示例：
-
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
 ```
 String carJson =
@@ -289,11 +267,7 @@ try {
 }
 ```
 
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
-
 JsonNode类
-
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
 ```
 String carJson =
@@ -331,13 +305,7 @@ try {
 }
 ```
 
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
-
-
-
 ### 将Object转换为JsonNode
-
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
 ```
 ObjectMapper objectMapper = new ObjectMapper();
@@ -349,13 +317,7 @@ car.doors = 4;
 JsonNode carJsonNode = objectMapper.valueToTree(car);
 ```
 
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
-
-
-
 ### 将JsonNode转换为Object
-
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
 ```
 ObjectMapper objectMapper = new ObjectMapper();
@@ -367,19 +329,11 @@ JsonNode carJsonNode = objectMapper.readTree(carJson);
 Car car = objectMapper.treeToValue(carJsonNode);
 ```
 
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
-
- 
-
-[回到顶部](https://www.cnblogs.com/guanbin-529/p/11488869.html#_labelTop)
-
 ## 使用Jackson ObjectMapper读取和编写YAML
 
  
 
 **1.示例1(只是yaml字符串和对象的互转，不涉及yaml文件的处理)**
-
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
 ```
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -407,13 +361,9 @@ public class YamlJacksonExample {
 }
 ```
 
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
-
 该`yamlString`变量包含`Employee`在执行此代码后序列化为YAML数据格式的对象。
 
 以下是`Employee`再次将YAML文本读入对象的示例：
-
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
 ```
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -449,17 +399,9 @@ public class YamlJacksonExample {
 }
 ```
 
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
-
 **2. 示例2 （yaml文件的读取和写入）**
 
- 
-
  **2.1定义Employee实体类**
-
- 
-
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
 ```
 package com.example.jackjson;
@@ -487,11 +429,7 @@ public class Employee {
 }
 ```
 
-[![复制代码](https://common.cnblogs.com/images/copycode.gif)](javascript:void(0);)
 
- 
-
- 
 
 **2.2创建要读取的yml EmployeeYaml.yml文件，并初始化一条数据**
 
