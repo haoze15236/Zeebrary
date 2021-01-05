@@ -61,3 +61,11 @@ npm unpublish [包名] -force
 
 
 # Yarn使用
+
+```shell
+#安装umi
+yarn global add umi
+#添加umi模块
+yarn add umi -g
+```
+
