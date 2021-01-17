@@ -35,15 +35,11 @@ ctrl+s 搜索校准显示器颜色
 
 # 软件
 
-请支持正版，破解版可参考：
-
-## Microsoft 系列
+## Microsoft出版
 
 [达牛帮帮你](http://www.dnbbn.com/) :破解版下载网站
 
 [无界鼠标(Mouse Without Borders)](https://www.microsoft.com/en-us/download/details.aspx?id=35460) ：微软出品,可连接多台电脑,共用一套键盘,鼠标。
-
-
 
 
 
