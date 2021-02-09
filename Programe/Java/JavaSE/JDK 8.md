@@ -138,8 +138,13 @@ System.err.println("totalMoney:"+totalMoney);
 Optional<Dish> maxDish = Dish.menu.stream().
       collect(Collectors.maxBy(Comparator.comparing(Dish::getCalories)));
 maxDish.ifPresent(System.out::println);
+
+Integer max = list.stream().max((list1,list2) -> list1>list2 ? 1:-1).get();
+        
  
 Optional<Dish> minDish = Dish.menu.stream().
       collect(Collectors.minBy(Comparator.comparing(Dish::getCalories)));
 minDish.ifPresent(System.out::println);
+//排序
+list.sort(( u1, u2)->u1.getAge().compareTo(u2.getAge()));
 ```
