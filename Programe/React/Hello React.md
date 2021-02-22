@@ -1,6 +1,8 @@
 # 引入react框架
 
-**CDN**:通过引入react的js来使用
+## **CDN方式**
+
+通过引入react的js来使用
 
 ```html
 <html lang="en">
@@ -22,7 +24,9 @@
 </html>
 ```
 
-**yarn**：通过yarn安装react插件
+## **yarn方式**
+
+通过yarn安装react插件
 
 ```shell
 #下载react框架核心插件
