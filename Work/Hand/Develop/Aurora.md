@@ -42,6 +42,7 @@ Aurora.request({
     lockMessage: '$[l:hap_waiting]',
     url: $au('CSH5040_executePaymentLink').getUrl(),
     para: param,
+    sync:true,
     success: function (resp) {
         Aurora.Masker.unmask($au('CSH5040_csh_document_payment_pay_window').wrap);
         CSH5040_returnPayment();
