@@ -29,4 +29,5 @@ ALTER TABLE hzero_platform.IAM_LABEL ADD FD_LEVEL VARCHAR(32) NOT NULL COMMENT "
 
 **问题猜测：**单独拿这个语句到数据库中执行,发现同样的报错,表名修改成小写,执行正常。
 
-**解决办法：**修改数据库设置
+**解决办法：**修改数据库设置:`/etc/my.cnf`
+
