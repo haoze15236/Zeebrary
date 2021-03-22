@@ -133,6 +133,17 @@ Map<Integer, List<Apple>> groupBy = appleList.stream().collect(Collectors.groupi
 //计算 总金额
 BigDecimal totalMoney = appleList.stream().map(Apple::getMoney).reduce(BigDecimal.ZERO, BigDecimal::add);
 System.err.println("totalMoney:"+totalMoney); 
+//汇总计算一条记录的多个金额
+Map<String, BigDecimal> resultMap = documentAccounts.stream().collect(
+                Collectors.groupingBy(x -> x.getAccountCode(), Collectors.reducing(BigDecimal.ZERO,y->{
+                    BigDecimal amount = BigDecimal.ZERO;
+                    if(!ObjectUtils.isEmpty(y.getFunctionalAmountDr())){
+                        amount = amount.add(y.getFunctionalAmountDr());
+                    }else if(!ObjectUtils.isEmpty(y.getFunctionalAmountCr())){
+                        amount = amount.add(y.getFunctionalAmountCr());
+                    }
+                    return amount;
+                }, BigDecimal::add)));
 
 //查找流中最大 最小值
 Optional<Dish> maxDish = Dish.menu.stream().
