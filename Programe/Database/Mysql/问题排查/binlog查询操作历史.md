@@ -13,14 +13,14 @@
   - 复制出近期的binlog日志
 
   ```shell
-  cp /data/binlog//mysql-bin.* /tmp/haoze
+  cp /data/binlog/mysql-bin.* /tmp/haoze
   ```
 
   - 编写bash遍历脚本
 
   ```shell
   #!/bin/bash进入临时目录
-  cd /tmp/haoze
+  cd /tmp/haozevim
   # 开始循环遍历目录
   for path in `ls . |grep mysql-bin.0`
   do
@@ -32,18 +32,26 @@
   mysqlbinlog --base64-output=DECODE-ROWS -v $path |grep -i -C 100 delete |grep -C 100 csh_repayment_register_dist >> z_grep.log
   echo "end." >>z_grep.log
   done
+  
+
+  #另一个mysqlbinlog查看日志语句
+mysqlbinlog --no-defaults  --base64-output=decode-rows  -v /tmp/haoze/mmysqlbinlog  --no-defaults  --base64-output=decode-rows  -v /tmp/haoze/mysql-bin.002505|sed -n '/###fnd_dimension_value v/,/COMMIT/p' > /tmp/delete.txtysql-bin.002505 | sed -n '/### DELETE FROM `hap_prod`.`fnd_dimension_value`/,/COMMIT/P' | sed -n 's\### \\p' | sed "s/\/\*.*\*\///g" | sed 's/`//g' > /tmp/1.txt
+  #进入mysql命令行可以通过内置表查看binlog
+  show binlog events in 'mysql-bin.002505' from 56326173 limit 10
+  #重复执行binlog事务
+mysqlbinlog --start-position=36506331 --stop-position=56326204 /tmp/haoze/mysql-bin.002505|mysql -uroot -p xinchaoDB2020!@#
   ```
 
-  - 执行脚本
+  - 执行脚本vim
 
   ```shell
   bash -x find_guolichao.sh
   ```
-
+  
   - 分析查找出来的binlog日志
-
+  
   根据的last_committed来区分事务，找到删除的语句所在的事务,通过对执行语句的判断,可以找到大概是审核拒绝时删除了不属于拒绝单据的分配行。
-
+  
   ```
   #210302 13:48:01 server id 2  end_log_pos 51478159 CRC32 0xe28d58a5 	GTID	last_committed=6417	sequence_number=6418	rbr_only=yes
   /*!50718 SET TRANSACTION ISOLATION LEVEL READ COMMITTED*//*!*/;
@@ -252,7 +260,7 @@
   # at 51491693
   # at 51492597
   #210302 13:48:01 server id 2  end_log_pos 51492761 CRC32 0x104f36b1 	Table_map: `hap_prod`.`cux_doc_audit_return_itf` mapped to number 3165294
-  # at 51492761
+# at 51492761
   #210302 13:48:01 server id 2  end_log_pos 51493186 CRC32 0x94ace208 	Update_rows: table id 3165294 flags: STMT_END_F
   ### UPDATE `hap_prod`.`cux_doc_audit_return_itf`
   ### WHERE
@@ -260,7 +268,7 @@
   ###   @2=NULL
   end.
   ```
-
+  
   
 
 
