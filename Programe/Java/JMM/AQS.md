@@ -34,41 +34,13 @@ Java并发编程核心在于java.concurrent.util包而juc当中的大多数同�
 
 - **自旋：**多个线程在竞争锁时,若CAS操作失败,则进行循环,重复去使用CAS比较是否可以持有锁。
 
-  ```Java
-  final boolean acquireQueued(final Node node, int arg) {
-          boolean failed = true;
-          try {
-              boolean interrupted = false;
-              for (;;) {
-                  //开始自旋
-                  final Node p = node.predecessor();
-                  //若当前线程位于等待队列的第一位，则再尝试获取锁,因为大部分情况下锁很快会被释放,这样设计可提高性能
-                  if (p == head && tryAcquire(arg)) {
-                      setHead(node);
-                      p.next = null; // help GC
-                      failed = false;
-                      return interrupted;
-                  }
-                  if (shouldParkAfterFailedAcquire(p, node) &&
-                      parkAndCheckInterrupt())
-                      interrupted = true;
-              }
-          } finally {
-              if (failed)
-                  cancelAcquire(node);
-          }
-      }
-  ```
-
-  
-
 - **队列：**若自旋一定次数之后,抢锁失败,则把当前抢锁的线程存储在队列中，等待锁释放之后,从队列中出队抢锁。
 
   查看**AbstractQueuedSynchronizer**源码可以看到,其内部定义了一个名为Node的对象作为等待对象,其本质是一个双向链表，其结构如下图:
 
-  ![image-20210329235631649](https://gitee.com/Zeebrary/PicBed/raw/master/img/image-20210329235631649.png)
+  ![image-20210408223450020](https://gitee.com/Zeebrary/PicBed/raw/master/img/image-20210408223450020.png)
 
-  上图中，head指针永远指向头节点，tail指针永远指向队列的尾节点，可以看到头节点的Thread=null，这是初始化队列时的一个初始节点，当head指针与tail指针都指向Thread=null的节点时，意味着等待队列为空。这样设计可以比较优雅的避免java中的空指针异常。
+  上图中，head指针永远指向头节点，tail指针永远指向队列的尾节点，可以看到头节点的Thread=null，<span style="color:red">这是初始化队列时的一个初始节点，当head指针与tail指针都指向Thread=null的节点时，意味着等待队列为空。</span>
 
 - **LockSupport：**JVM提供的一个API，当线程抢锁失败，进入等待队列中后，使用park()阻塞线程，当锁释放，线程出队抢到锁之后，使用unpark()唤醒阻塞线程。
 
@@ -124,38 +96,209 @@ public final void acquire(int arg) {
 
 ![image-20210407225731856](https://gitee.com/Zeebrary/PicBed/raw/master/img/image-20210407225731856.png)
 
-### tryAcquire()
+### tryAcquire
 
-> 尝试获取锁并返回是否获取成功
+> 尝试获取锁,并返回是否获取成功
 
 ```java
 
 protected final boolean tryAcquire(int acquires) {
-            final Thread current = Thread.currentThread();
-            int c = getState();
-            if (c == 0) {
-               	//hasQueuedPredecessors():等待队列是否为空,或者当前等待线程是否处于等待队列的第一位,即判断当前线程能否直接获取到锁
-                //compareAndSetState(0, acquires):设置状态器为加锁状态
-                //setExclusiveOwnerThread:设置获取到锁的线程为当前线程
-                if (!hasQueuedPredecessors() &&
-                    compareAndSetState(0, acquires)) {
-                    setExclusiveOwnerThread(current);
-                    return true;
-                }
-            }
-            else if (current == getExclusiveOwnerThread()) {
-                //若获取到锁的线程又重复获取锁，则状态器state加锁状态增加一个票据单位(acquires);
-                int nextc = c + acquires;
-                if (nextc < 0)
-                    throw new Error("Maximum lock count exceeded");
-                setState(nextc);
-                return true;
-            }
-            return false;
+    final Thread current = Thread.currentThread();
+    int c = getState();
+    if (c == 0) {
+        //hasQueuedPredecessors():等待队列是否为空,或者当前等待线程是否处于等待队列的第一位,即判断当前线程能否直接获取到锁
+        //compareAndSetState(0, acquires):设置状态器为加锁状态
+        //setExclusiveOwnerThread:设置获取到锁的线程为当前线程
+        if (!hasQueuedPredecessors() &&
+            compareAndSetState(0, acquires)) {
+            setExclusiveOwnerThread(current);
+            return true;
         }
+    }
+    else if (current == getExclusiveOwnerThread()) {
+        //若获取到锁的线程又重复获取锁，则状态器state加锁状态增加一个票据单位(acquires);——————可重入特性
+        int nextc = c + acquires;
+        if (nextc < 0)
+            throw new Error("Maximum lock count exceeded");
+        setState(nextc);
+        return true;
+    }
+    return false;
+}
 ```
 
-### addWaiter(Node.EXCLUSIVE)
+### addWaiter
+
+> 等待锁的线程进入CLH队列
+
+```java
+private Node addWaiter(Node mode) {
+    //Node.EXCLUSIVE 可以看到是null,所以这个Node节点的nextWaiter指针为空，即创建了一个独占模式的节点
+    Node node = new Node(Thread.currentThread(), mode);
+    Node pred = tail;
+    if (pred != null) {
+    	//CLH队列不为空时,把当前线程的Node节点尝试加入队列最后
+        node.prev = pred;
+        if (compareAndSetTail(pred, node)) {
+            //入队成功之后,将之前队列中最后一个节点的next指针指向当前线程node节点
+            pred.next = node;
+            return node;
+        }
+    }
+    //入队失败或者队列未创建，则CAS自旋入队
+    enq(node);
+    return node;
+}
+```
+
+#### enq
+
+> CAS自旋进入等待队列
+
+```java
+private Node enq(final Node node) {
+    for (;;) {
+        Node t = tail;
+        if (t == null) {
+            //CLH队列为空则初始化队列
+            if (compareAndSetHead(new Node()))
+                tail = head;
+        } else {
+            //继续尝试入队
+            node.prev = t;
+            if (compareAndSetTail(t, node)) {
+                t.next = node;
+                return t;
+            }
+        }
+    }
+}
+```
+
+### acquireQueued
+
+> 阻塞当前线程并返回线程是否被中断过状态
+
+```java
+final boolean acquireQueued(final Node node, int arg) {
+        boolean failed = true;
+        try {
+            boolean interrupted = false;
+            for (;;) {
+                //或者当前线程Node节点在队列中的前置节点
+                final Node p = node.predecessor();
+                if (p == head && tryAcquire(arg)) {
+                //若当前线程位于CLH队列第一位,则继续尝试获取锁,成功则出队
+                    setHead(node);
+                    p.next = null; // help GC
+                    failed = false;
+                    return interrupted;
+                }
+                if (shouldParkAfterFailedAcquire(p, node) &&
+                    parkAndCheckInterrupt())
+                    //parkAndCheckInterrupt:阻塞当前线程并返回线程是否被中断过
+                    interrupted = true;
+            }
+        } finally {
+            if (failed)
+                cancelAcquire(node);
+        }
+    }
+```
+
+#### shouldParkAfterFailedAcquire
+
+> 判断当前线程是否应该阻塞
+
+```java
+private static boolean shouldParkAfterFailedAcquire(Node pred, Node node) {
+    	//判断当前线程在队列中的前一个等待线程的状态
+        int ws = pred.waitStatus;
+        if (ws == Node.SIGNAL)
+            //前置节点状态为Node.SIGNAL则表示当前节点可以安全的阻塞
+            return true;
+        if (ws > 0) {
+            //前置节点已经被取消,将前置Node节点移出CLH队列,直至前置节点为正常节点
+            do {
+                node.prev = pred = pred.prev;
+            } while (pred.waitStatus > 0);
+            pred.next = node;
+        } else {
+            //前置节点的waitStatus为0(初始化节点还未设置状态)，或者为 Node.PROPAGATE(广播状态),则当前线程不应该阻塞，并将前置节点状态设置为Node.SIGNAL(已就绪状态)
+            compareAndSetWaitStatus(pred, ws, Node.SIGNAL);
+        }
+        return false;
+    }
+```
+
+#### cancelAcquire
+
+> 当前线程取消竞争锁
+
+```java
+ private void cancelAcquire(Node node) {
+        // 当前节点为空直接返回
+        if (node == null)
+            return;
+        node.thread = null;
+        //跳过当前节点前面已失效节点,失效节点在此处被真正清理
+        Node pred = node.prev;
+        while (pred.waitStatus > 0)
+            node.prev = pred = pred.prev;
+        //获取前置节点的后一个节点,即当前节点
+        Node predNext = pred.next;
+        //失效当前节点
+        node.waitStatus = Node.CANCELLED;
+        // 若当前节点为CLH队列的队尾,则移除当前节点
+        if (node == tail && compareAndSetTail(node, pred)) {
+            compareAndSetNext(pred, predNext, null);
+        } else {
+            int ws;
+            //当前节点的前置节点不为CLH队列的队首,即当前节点不是CLH队列中第一个等待获取锁的节点
+            if (pred != head &&
+                //前置节点为可Node.SIGNAL(就绪状态)或者将前置节点状态设置为Node.SIGNAL(就绪状态)成功
+                ((ws = pred.waitStatus) == Node.SIGNAL ||
+                 (ws <= 0 && compareAndSetWaitStatus(pred, ws, Node.SIGNAL))) &&
+                pred.thread != null) {
+                Node next = node.next;
+                //当前节点的下一个节点是正常节点时
+                if (next != null && next.waitStatus <= 0)
+                    //将前置节点next指针指向当前节点的下一个节点
+                    compareAndSetNext(pred, predNext, next);
+            } else {
+                //当前节点是CLH队列中第一个等待获取锁的节点,或者前置节点并发下也已失效
+                unparkSuccessor(node);
+            }
+
+            node.next = node; // help GC
+        }
+    }
+```
+
+##### unparkSuccessor
+
+> 唤醒当前节点的下一个有效节点
+
+```java
+private void unparkSuccessor(Node node) {
+    	//设置当前线程为0状态(初始化状态)
+        int ws = node.waitStatus;
+        if (ws < 0)
+            compareAndSetWaitStatus(node, ws, 0);
+        Node s = node.next;
+    	//下一个节点并发下已不存在或者已失效
+        if (s == null || s.waitStatus > 0) {
+            s = null;
+            //从CLH队尾遍历,获取当前节点有效的下一个节点
+            for (Node t = tail; t != null && t != node; t = t.prev)
+                if (t.waitStatus <= 0)
+                    s = t;
+        }
+    	//唤醒当前节点的下一个节点
+        if (s != null)
+            LockSupport.unpark(s.thread);
+    }
+```
 
 # BlockingQueue
 
