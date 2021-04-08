@@ -2,7 +2,7 @@
 
 Java并发编程核心在于java.concurrent.util包而juc当中的大多数同步器实现都是围绕着共同的基础行为，比如等待队列、条件队列、独占获取、共享获取等，而这个行为的抽象就是基于AbstractQueuedSynchronizer简称AQS，AQS定义了一套多线程访问共享资源的同步器框架，是一个依赖状态(state)的同步器。
 
-AQS的设计原理可以总结为以下四个方面
+## AQS的设计原理
 
 - **CAS（compare and swap）：**比较与交换,在一个**原子性操作**中比较是否可以占有锁,如果可以则占有，不能则操作失败，保证同一时间只能有一个线程能操作成功。
 
@@ -11,11 +11,15 @@ AQS的设计原理可以总结为以下四个方面
   ```java
   public class TestAQS {
   	public volatile int casValue=0;
-  	private static final Unsafe unsafe = Unsafe.getUnsafe();
+  	private static Unsafe unsafe =null;
+  	private static Field getUnsafe = null;
   	private static final long stateOffset;
   	static {
   		try {
-              //初始化偏移量
+              //直接使用Unsafe.getUnsafe()会报错,此处使用反射获取Unsafe对象
+  			getUnsafe = Unsafe.class.getDeclaredField("theUnsafe");
+  			getUnsafe.setAccessible(true);
+  			unsafe = (Unsafe) getUnsafe.get(null);
   			stateOffset = unsafe.objectFieldOffset
   					(TestAQS.class.getDeclaredField("casValue"));
   		} catch (Exception ex) { throw new Error(ex); }
@@ -68,6 +72,21 @@ AQS的设计原理可以总结为以下四个方面
 
 - **LockSupport：**JVM提供的一个API，当线程抢锁失败，进入等待队列中后，使用park()阻塞线程，当锁释放，线程出队抢到锁之后，使用unpark()唤醒阻塞线程。
 
+## 源码解析
+
+- **state**:状态器
+
+- **exclusiveOwnerThread**:当前获取到锁的线程
+
+- **Node**：CLH队列的基础组成部分,包含以下几个内容
+  - **thread**：指向等待锁的线程
+  - **prev**:指向前一个Node节点
+  - **next**:指向后一个Node节点
+  - **nextWaiter**：指向后一个条件等待队列的Node节点
+  - **waitStatus**：线程的等待状态
+- **head**：指向当前锁的CLH队列头Node节点
+- **tail**：指向当前锁的CLH队列尾Node节点
+
 # ReentrantLock
 
 ReentrantLock是一种基于AQS框架的应用实现，是JDK中的一种线程并发访问的同步手段，它的功能类似于synchronized是一种互斥锁，可以保证线程安全。而且它具有比synchronized更多的特性，比如它支持手动**加锁与解锁，支持加锁的公平性**。
@@ -85,6 +104,58 @@ ReentrantLock是一种基于AQS框架的应用实现，是JDK中的一种线程�
   ReentrantLock.lock()方法若等待线程被中断(Thread.interupt()给线程打上中断标记),则在线程获取到锁之后,可通过Thread.interrupted()判断线程在阻塞过程中是否被中断过。即这个锁不能被强制中断，而是由程序员判断是否在获取锁之后需要中断线程。
 
   ReentrantLock.lockInterruptibly()方法在线程未获取到锁被阻塞的过程中，若被中断则抛出InterruptedException异常()。即此锁可以被强制中断，并以异常的方式进行后续处理。
+
+## 源码解析
+
+从`ReentrantLock.lock()`跟进源码中看,通过内部类`FairSync`继承`sync`,调用了`AbstractQueuedSynchronizer.acquire()`方法
+
+```java
+/*
+以独占模式获取，忽略中断。通过调用至少一次tryAcquire来实现，并在成功时返回。否则线程将排队，可能会反复阻塞和取消阻塞，调用tryAcquire直到成功
+*/
+public final void acquire(int arg) {
+        if (!tryAcquire(arg) &&
+            acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+            selfInterrupt();
+    }
+```
+
+方法的调用链如图:
+
+![image-20210407225731856](https://gitee.com/Zeebrary/PicBed/raw/master/img/image-20210407225731856.png)
+
+### tryAcquire()
+
+> 尝试获取锁并返回是否获取成功
+
+```java
+
+protected final boolean tryAcquire(int acquires) {
+            final Thread current = Thread.currentThread();
+            int c = getState();
+            if (c == 0) {
+               	//hasQueuedPredecessors():等待队列是否为空,或者当前等待线程是否处于等待队列的第一位,即判断当前线程能否直接获取到锁
+                //compareAndSetState(0, acquires):设置状态器为加锁状态
+                //setExclusiveOwnerThread:设置获取到锁的线程为当前线程
+                if (!hasQueuedPredecessors() &&
+                    compareAndSetState(0, acquires)) {
+                    setExclusiveOwnerThread(current);
+                    return true;
+                }
+            }
+            else if (current == getExclusiveOwnerThread()) {
+                //若获取到锁的线程又重复获取锁，则状态器state加锁状态增加一个票据单位(acquires);
+                int nextc = c + acquires;
+                if (nextc < 0)
+                    throw new Error("Maximum lock count exceeded");
+                setState(nextc);
+                return true;
+            }
+            return false;
+        }
+```
+
+### addWaiter(Node.EXCLUSIVE)
 
 # BlockingQueue
 
@@ -106,3 +177,9 @@ BlockingQueue，是java.util.concurrent 包提供的用于解决并发生产者 
   - 通常用链表或者数组实现
   - 一般而言队列具备FIFO先进先出的特性，当然也有双端队列（Deque）优先级队列
   - 主要操作：入队（EnQueue）与出队（Dequeue）
+
+## ArrayBlockingQueue
+
+# Semaphore
+
+# CountDownLatch
