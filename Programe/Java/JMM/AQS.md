@@ -44,6 +44,8 @@ Java并发编程核心在于java.concurrent.util包而juc当中的大多数同�
 
 - **LockSupport：**JVM提供的一个API，当线程抢锁失败，进入等待队列中后，使用park()阻塞线程，当锁释放，线程出队抢到锁之后，使用unpark()唤醒阻塞线程。
 
+  LockSupport.park():
+
 ## 源码解析
 
 - **state**:状态器
@@ -88,6 +90,7 @@ ReentrantLock是一种基于AQS框架的应用实现，是JDK中的一种线程�
 public final void acquire(int arg) {
         if (!tryAcquire(arg) &&
             acquireQueued(addWaiter(Node.EXCLUSIVE), arg))
+            //若线程在竞争锁的过程中被中断过,则给该线程打中断标记
             selfInterrupt();
     }
 ```
@@ -300,6 +303,26 @@ private void unparkSuccessor(Node node) {
     }
 ```
 
+## 拓展
+
+### 线程中断
+
+上述公平锁源码中有个地方需要拓展讲解一下,当线程在竞争锁的过程中被中断了，根据上述源码，并不会抛出`InterruptedException`,而是在方法中调用如下代码:
+
+```java
+static void selfInterrupt() {
+    Thread.currentThread().interrupt();
+}
+```
+
+**Thread.interrupt()**: 并不是字面上的中断线程的意思，而是给线程打上一个中断标记,线程依然会继续执行后续的代码,当我们使用ReentrantLock.lokc()时，可以编写代码通过**Thread.interrupted()**获取到此标记，判断线程是否被中断过，来做其他处理。
+
+**Thread.interrupted()**: 获取线程是否中断过的状态,返回true或者false,并将线程中断标记置空，所以重复调用，第二次会是false;
+
+**Thread.isInterrupted()**：获取线程是否中断过的状态，不会置空线程中断标记。
+
+ReentrantLock也提供了**lockInterruptibly()**方法，在线程竞争锁时出现中断，直接抛出`InterruptedException`。
+
 # BlockingQueue
 
 BlockingQueue，是java.util.concurrent 包提供的用于解决并发生产者 - 消费者问题的最有用的类，它的特性是在任意时刻只有一个线程可以进行take或者put操作(**线程安全**)，并且BlockingQueue提供了超时return null的机制，在许多生产场景里都可以看到这个工具的身影。
@@ -321,8 +344,48 @@ BlockingQueue，是java.util.concurrent 包提供的用于解决并发生产者 
   - 一般而言队列具备FIFO先进先出的特性，当然也有双端队列（Deque）优先级队列
   - 主要操作：入队（EnQueue）与出队（Dequeue）
 
+## BlockingQueue API
+
+BlockingQueue 接口的所有方法可以分为两大类：负责向队列添加元素的方法和检索这些元素的方法。在队列满/空的情况下，来自这两个组的每个方法的行为都不同。
+
+### 添加元素
+
+| 方法                                    | 说明                                                         |
+| --------------------------------------- | ------------------------------------------------------------ |
+| add()                                   | 如果插入成功则返回 true，否则抛出 IllegalStateException 异常 |
+| put()                                   | 将指定的元素插入队列，如果队列满了，那么会阻塞直到有空间插入 |
+| offer()                                 | 如果插入成功则返回 true，否则返回 false                      |
+| offer(E e, long timeout, TimeUnit unit) | 尝试将元素插入队列，如果队列已满，那么会阻塞直到有空间插入   |
+
+### 检索元素
+
+| 方法                              | 说明                                                         |
+| --------------------------------- | ------------------------------------------------------------ |
+| take()                            | 获取队列的头部元素并将其删除，如果队列为空，则阻塞并等待元素变为可用 |
+| poll(long timeout, TimeUnit unit) | 检索并删除队列的头部，如有必要，等待指定的等待时间以使元素可用，如果超时，则返回 null |
+
 ## ArrayBlockingQueue
+
+定义了notFull,notEmpty两个ConditionObject,其中各自维护了一个条件等待队列
 
 # Semaphore
 
+Semaphore 字面意思是信号量的意思，它的作用是控制访问特定资源的线程数目，底层依赖AQS的状态State，是在生产当中比较常用的一个工具类。一般用于资源访问，服务限流(Hystrix里限流就有基于信号量方式)。
+
+**acquire()** ：表示阻塞并获取许可
+**release()** ：表示释放许可
+
 # CountDownLatch
+
+CountDownLatch这个类能够使一个线程等待其他线程完成各自的工作后再执行。例如，应用程序的主线程希望在负责启动框架服务的线程已经启动所有的框架服务之后再执行。CountDownLatch是通过一个计数器来实现的，计数器的初始值为线程的数量。每当一个线程完成了自己的任务后，计数器的值就会减1。当计数器值到达0时，它表示所有的线程已经完成了任务，然后在闭锁上等待的线程就可以恢复执行任务。
+
+CountDownLatch.countDown()：
+CountDownLatch.await()：
+
+# CyclicBarrier
+
+栅栏屏障，让一组线程到达一个屏障（也可以叫同步点）时被阻塞，直到最后一个线程到达屏障时，屏障才会开门，所有被屏障拦截的线程才会继续运行。CyclicBarrier默认的构造方法是CyclicBarrier（int parties），其参数表示屏障拦截的线程数量，每个线程调用await方法告CyclicBarrier我已经到达了屏障，然后当前线程被阻塞。
+
+cyclicBarrier.await()：
+
+跟CountDownLatch反向使用类似效果，但是CyclicBarrier可重复使用
