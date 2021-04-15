@@ -1,3 +1,5 @@
+[并发编程思维导图](https://www.processon.com/view/link/5d81dec7e4b04c14c4e7aac8#map)
+
 # JMM介绍
 
 Java内存模型(java memory model)是一个**抽象**概念,与计算机底层硬件并无直接对应。JMM抽象出来两个概念:
