@@ -359,7 +359,7 @@ BlockingQueue，是java.util.concurrent 包提供的用于解决并发生产者 
 
 ## ArrayBlockingQueue
 
-是一个用数组实现的有界阻塞 队列，按照先进先出(`FIFO`)的原则对元素进行排序。定义了notFull,notEmpty两个ConditionObject,其中各自维护了一个条件等待队列，
+是一个用数组实现的有界阻塞 队列，按照先进先出(`FIFO`)的原则对元素进行排序。定义了notFull,notEmpty两个ConditionObject,其中各自维护了一个条件等待队列，根据条件唤醒对应队列里面的线程。
 
 ## LinkedBlockingQueue
 
