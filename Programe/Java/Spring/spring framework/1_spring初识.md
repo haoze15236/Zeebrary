@@ -94,19 +94,23 @@ DI是IOC的一种具体实现。
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>cn.tulingxueyuan.spring</groupId>
-    <artifactId>spring_ioc</artifactId>
+    <groupId>org.example</groupId>
+    <artifactId>hello-spring</artifactId>
     <version>1.0-SNAPSHOT</version>
-
     <dependencies>
+        <!--spring context依赖-->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-context</artifactId>
-            <version>5.2.6.RELEASE</version>
+            <version>5.2.8.RELEASE</version>
+        </dependency>
+        <!--junit依赖-->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+            <version>4.12</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
-
 </project>
 ```
-
-### springboot + javaconfig

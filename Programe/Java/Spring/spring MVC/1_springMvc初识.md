@@ -4,37 +4,27 @@
 
 ![https://note.youdao.com/yws/public/resource/5c9055f0c6fff47263ddf0e0d37422d5/xmlnote/7A49C57D2B984A1EABE723B1A45E9873/E75F3823251F4CB693635E55C66B71FF/2580](https://note.youdao.com/yws/public/resource/5c9055f0c6fff47263ddf0e0d37422d5/xmlnote/7A49C57D2B984A1EABE723B1A45E9873/E75F3823251F4CB693635E55C66B71FF/2580)
 
-DispatcherServlet： 前端调度器 ， 负责将请求拦截下来分发到各控制器方法中
+- **DispatcherServlet**： 前端调度器 ， 负责将请求拦截下来分发到各控制器方法中
 
-HandlerMapping: 负责根据请求的URL和配置@RequestMapping映射去匹配， 匹配到会返回Handler（具体控制器的方法）
+- **HandlerMapping**: 负责根据请求的URL和配置@RequestMapping映射去匹配， 匹配到会返回Handler（具体控制器的方法）
 
-HandlerAdaper: 负责调用Handler-具体的方法-  返回视图的名字  Handler将它封装到ModelAndView(封装视图名，request域的数据）
+- **HandlerAdaper**: 负责调用Handler-具体的方法-  返回视图的名字  Handler将它封装到ModelAndView(封装视图名，request域的数据）
 
-ViewReslover: 根据ModelAndView里面的视图名地址去找到具体的jsp封装在View对象中
+- **ViewReslover**: 根据ModelAndView里面的视图名地址去找到具体的jsp封装在View对象中
 
-View：进行视图渲染（将jsp转换成html内容） 最终response到的客户端
+- **View**：进行视图渲染（将jsp转换成html内容） 最终response到的客户端
 
-1、DispatcherServlet表示前端控制器，是整个SpringMVC的控制中心。用户发出请求，DispatcherServlet接收请求并拦截请求。
-
-2、HandlerMapping为处理器映射。DispatcherServlet调用HandlerMapping,HandlerMapping根据请求url查找Handler。
-
-3、返回处理器执行链，根据url查找控制器，并且将解析后的信息传递给DispatcherServlet
-
-4、HandlerAdapter表示处理器适配器，其按照特定的规则去执行Handler。
-
-5、执行handler找到具体的处理器
-
-6、Controller将具体的执行信息返回给HandlerAdapter,如ModelAndView。
-
-7、HandlerAdapter将视图逻辑名或模型传递给DispatcherServlet。
-
-8、DispatcherServlet调用视图解析器(ViewResolver)来解析HandlerAdapter传递的逻辑视图名。
-
-9、视图解析器将解析的逻辑视图名传给DispatcherServlet。
-
-10、DispatcherServlet根据视图解析器解析的视图结果，调用具体的视图，进行试图渲染
-
-11、将响应数据返回给客户端
+> - DispatcherServlet表示前端控制器，是整个SpringMVC的控制中心。用户发出请求，DispatcherServlet接收请求并拦截请求。
+> - HandlerMapping为处理器映射。DispatcherServlet调用HandlerMapping,HandlerMapping根据请求url查找Handler。
+> - 返回处理器执行链，根据url查找控制器，并且将解析后的信息传递给DispatcherServlet
+> - HandlerAdapter表示处理器适配器，其按照特定的规则去执行Handler。
+> - 执行handler找到具体的处理器
+> - Controller将具体的执行信息返回给HandlerAdapter,如ModelAndView。
+> - HandlerAdapter将视图逻辑名或模型传递给DispatcherServlet。
+> - DispatcherServlet调用视图解析器(ViewResolver)来解析HandlerAdapter传递的逻辑视图名。
+> - 视图解析器将解析的逻辑视图名传给DispatcherServlet。
+> - DispatcherServlet根据视图解析器解析的视图结果，调用具体的视图，进行视图渲染
+> - 将响应数据返回给客户端
 
 # 项目部署
 
@@ -105,7 +95,7 @@ View：进行视图渲染（将jsp转换成html内容） 最终response到的客
        xmlns:context="http://www.springframework.org/schema/context"
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
 
-    <context:component-scan base-package="cn.tulingxueyuan"></context:component-scan>
+    <context:component-scan base-package="com.springMvc"></context:component-scan>
 </beans>
 ```
 
@@ -132,9 +122,9 @@ public class HelloSpringMvc {
 
 # 注解使用
 
+### 获取参数
 
-
-### @RequestParam
+#### @RequestParam
 
 如何获取SpringMVC中请求中的信息，默认情况下，可以直接在方法的参数中填写跟请求一样的名称，此时会默认接受参数
 如果有值，直接赋值，如果没有，那么直接给空值
@@ -149,11 +139,11 @@ public String request(@RequestParam("user") String username){}
 
 建议所有参数都使用包装数据类型。
 
-### @RequestHeader
+#### @RequestHeader
 
 获取请求头中的某个属性使用Map接受则可以接收到请求头所有的内容
 
-### @CookieValue              
+#### @CookieValue              
 
 获取cookie中的某个属性,使用Map接受则可以接收到cookie所有的内容
 
@@ -165,7 +155,7 @@ public String paramsRequest(@CookieValue Map cookie){
 }
 ```
 
-### @PathVariable（restful参数）
+#### @PathVariable（restful参数）
 
 ```java
 @RequestMapping("/user/{id}/{username}")
@@ -178,9 +168,7 @@ public String path01(@PathVariable("id") Integer id,@PathVariable("username") St
 
 若是对象，{属性名}与对象属性名对应上则会自动匹配
 
-
-
-### @SessionAttribute
+#### @SessionAttribute
 
 用在类上面的，写入session的：
 
@@ -209,7 +197,7 @@ public String getSession(@SessionAttribute(value="type",required = false) String
 }
 ```
 
-### **@ModelAttribute**
+#### **@ModelAttribute**
 
 **用在方法上:**@ModelAttribute的方法会在当前处理器中所有的处理方法之前调用
 
@@ -217,9 +205,31 @@ public String getSession(@SessionAttribute(value="type",required = false) String
 
 注意:若通过@ModelAttribute来设置**单例,类级别的变量**存在线程安全问题。
 
+### 请求处理
+
+#### @RequestMapping
+
+@RequestMapping用来匹配客户端发送的请求，可以在方法上使用，也可以在类上使用。
+
+- 方法：表示用来匹配要处理的请求。
+- 类上：表示为当前类的所有方法的请求地址添加一个前置路径，访问的时候必须要添加此路径。
+
+注意：在整个项目的不同方法上不能包含相同的@RequestMapping值。
+
+```java
+/**
+* @RequestMapping包含三种模糊匹配的方式，分别是：
+* ？：能替代任意一个字符
+* *: 能替代任意多个字符和一层路径
+* **：能代替多层路径
+*/
+ @RequestMapping(value = "/**/h*llo?")
+ public String hello5(){}
+```
 
 
-# 面试题
+
+# 拓展
 
 1. springmvc 控制器是不是单例的？如果是单例的会出现什么问题？怎么解决？
 

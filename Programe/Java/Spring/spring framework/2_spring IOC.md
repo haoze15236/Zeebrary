@@ -8,16 +8,101 @@ ApplicationContext是Spring IoC容器(The Spring Container)实现的代表，**�
 
 ### 初始化
 
-```java
-//此处采用xml配置元数据方式:service.xml和daos.xml
-//ClassPathXmlApplicationContext 基于xml配置元数据来实例化spring容器
-ApplicationContext context = new ClassPathXmlApplicationContext("services.xml", "daos.xml");
-//AnnotationConfigApplicationContext 根据javaconfig 来实例化spring容器
+- xml方式初始化IOC容器
+
+首先在Resource目录下创建配置xml文件：`spring-context.xml`
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!--在ioc.xml.dto包下创建User类-->
+    <bean name="user" class="ioc.xml.dto.User"/>
+</beans>
 ```
 
-需要注意:<span style="color:#ff1f1f">容器在初始化的时候,就已经加载好了所有的bean</span>
+这里我们使用前面配置的junit来做单元测试,尝试加载XML配置初始化spring IOC容器，并获取User类的实例
 
-### 获取bean
+```java
+package ioc.xml;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
+public class HelloSpring {
+	private ClassPathXmlApplicationContext xmlApplicationContext;
+	@Before
+	public void initContext(){
+        //加载XML配置文件
+		xmlApplicationContext = new ClassPathXmlApplicationContext("spring-context.xml");
+	}
+	@Test
+	public void testIocGetBean(){
+        //通过name获取Bean,我们在User的无参构造方法中输出一句话,此处就可以看到在控制台的输出
+		xmlApplicationContext.getBean("user");
+	}
+}
+```
+
+- javaconfig方式初始化IOC容器
+
+首先创建配置类
+
+```java
+package ioc.javaconfig;
+
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
+import org.springframework.context.annotation.PropertySource;
+
+@Configuration
+@ComponentScan(basePackages = {"ioc.**"})
+@PropertySource("classpath:setting.properties")
+@EnableAspectJAutoProxy
+public class BeanConfig {
+
+}
+
+```
+
+初始化容器并尝试获取User实例:
+
+```java
+package springframework.javaConfig;
+
+import com.alibaba.druid.pool.DruidDataSource;
+import org.junit.Before;
+import org.junit.Test;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+
+public class TestJavaConfig {
+    private  AnnotationConfigApplicationContext ioc;
+    @Before
+    public void before(){
+        //初始化javaconfig配置类来创建IOC容器
+        ioc = new AnnotationConfigApplicationContext(AppConfig.class);
+    }
+    @Test
+    public void testJavaConfig(){
+        DruidDataSource dataSource = ioc.getBean("dataSource",DruidDataSource.class);
+        System.out.println(dataSource);
+        dataSource = ioc.getBean("dataSource",DruidDataSource.class);
+        System.out.println(dataSource);
+    }
+
+    @Test
+    public void testPeople(){
+        People people = ioc.getBean(People.class);
+        System.out.println(people);
+        people = ioc.getBean(People.class);
+        System.out.println(people);
+    }
+}
+
+```
+
+获取bean的几种方式
 
 ```java
 //使用容器通过bean的类名获取具体的对象
@@ -64,7 +149,7 @@ prototype 多例（原型bean) 每次获取都会new一次新的bean-->
 <bean class="cn.init.beans.Person" id="person3" scope="prototype">
     <property name="id" value="1"></property>
     <property name="realName" value="吴彦祖"></property>
-    <property name="name" value="徐庶"></property>
+    <property name="name" value="haoz"></property>
 </bean>
 ```
 
@@ -243,7 +328,7 @@ factory-method:配置User类中的静态工厂方法
 <bean class="com.init.User" id="user3" init-method="initConfig" destroy-method="destroyConfig">
     <constructor-arg name="id" value="1"/>
     <constructor-arg name="name" value="haoze"/>
-    <constructor-arg name="realName" value="郝泽"/>
+    <constructor-arg name="realName" value="test"/>
 </bean>
 ```
 
