@@ -1,6 +1,90 @@
 # http请求相关注解
 
-## @RequestParam
+## 请求行(url)
+
+### @RequestMapping
+
+@RequestMapping用来匹配客户端发送的请求，可以在方法上使用，也可以在类上使用。
+
+- 方法：表示用来匹配要处理的请求行。
+- 类上：表示为当前类的所有方法的请求地址添加一个前置路径，访问的时候必须要添加此路径。
+
+注意：在整个项目的不同方法上不能包含相同的@RequestMapping值。
+
+```java
+@Controller
+public class HelloSpringMvc {
+@RequestMapping(value = {"/requestMapping"}
+	,method = {RequestMethod.POST,RequestMethod.GET}
+	,params = {"name"}
+	,headers = {"haoze"}
+	,consumes = {MediaType.TEXT_PLAIN_VALUE}
+	,produces= {MediaType.TEXT_PLAIN_VALUE})
+	@ResponseBody
+	public String requestMapping(String name){
+		System.out.println("hello springmvc:"+name);
+		return "郝泽";
+	}
+}
+```
+
+- **value** :映射的url路径,支持模糊匹配：
+
+  - ？：能替代任意一个字符
+  - *: 能替代任意多个字符和一层路径
+  - **：能代替多层路径
+
+  同时可以使用{}占位来支持restful风格请求，与`@PathVariable`一起使用
+
+- **method** : 映射请求方法，可选值可参考`RequestMethod`定义的枚举
+
+- **params** ：映射请求参数
+
+  - = ： `name = 1` 表示请求中必须要有name参数且值必须等于1
+  - != :  `name != 1` 表示请求中name参数不能不等于1，可以没有name参数
+  - 参数 ： `name` 表示请求中必须要有name参数,不限制值
+  - !参数：`!name` 表示请求中必须不包含name参数
+
+- **headers** ：映射请求头,用法跟params一样，有一点不同的是仅当`content-type`作为参数时，其值支持*模糊匹配
+
+  - content-type=text/*  ：匹配所有的text/开头的参数值
+
+- **consumes** ：映射请求数据格式:即限制请求头中`content-type`的值，支持*模糊匹配
+- **produces** ：映射返回数据格式,即限制请求头中`Accept`的值，支持*模糊匹配，意思是本接口只返回此处定义的格式的数据，你能处理的数据格式匹配不上，就不处理你的请求。
+
+在使用reseful风格的后端接口时,springmvc提供了更细分的Mapping注解
+
+| 注解           | 说明                                                         |
+| -------------- | ------------------------------------------------------------ |
+| @GetMapping    | 只接受Get请求的映射，其他同@RequestMapping,一般用于查询数据  |
+| @PostMapping   | 只接受Post请求的映射，其他同@RequestMapping,一般用于新增数据 |
+| @PutMapping    | 只接受Put请求的映射，其他同@RequestMapping,一般用于修改数据  |
+| @DeleteMapping | 只接受delete请求的映射，其他同@RequestMapping,一般用于删除数据 |
+
+## 请求头
+
+### @RequestHeader
+
+获取请求头的参数
+
+```java
+@Controller
+public class HelloSpringMvc {
+	@RequestMapping("/hello")
+	@ResponseBody
+	public String hello(@RequestHeader Map header,@RequestHeader("agent") String agent){
+        //@RequestHeader Map header 			获取请求头内的所有请求头参数
+        //@RequestHeader("agent") String agent  获取请求头内中agent的参数值
+		System.out.println("hello springmvc:"+name);
+		System.out.println("hello springmvc:"+header);
+		return "hello";
+	}
+}
+```
+
+## 请求数据
+
+### @RequestParam
 
 获取http请求中的键值对参数，如get/post请求中url后面的参数,或者post使用x-www-form-urlencoded格式的请求体中键值对参数。
 
@@ -36,121 +120,7 @@ public @interface RequestParam {
 }
 ```
 
-## @RequestHeader
-
-获取请求头的参数
-
-```java
-@Controller
-public class HelloSpringMvc {
-	@RequestMapping("/hello")
-	@ResponseBody
-	public String hello(@RequestHeader Map header,@RequestHeader("agent") String agent){
-        //@RequestHeader Map header 			获取请求头内的所有请求头参数
-        //@RequestHeader("agent") String agent  获取请求头内中agent的参数值
-		System.out.println("hello springmvc:"+name);
-		System.out.println("hello springmvc:"+header);
-		return "hello";
-	}
-}
-```
-
-## @CookieValue              
-
-获取cookie中的某个属性,使用方式同@RequestHeader
-
-```java
-@RequestMapping("/params")
-public String paramsRequest(@CookieValue Map cookie){
-    System.out.println(cookie);
-    return cookie.toString();
-}
-```
-
-## @PathVariable（restful参数）
-
-```java
-@RequestMapping("/user/{id}/{username}")
-public String path01(@PathVariable("id") Integer id,@PathVariable("username") String name){
-    System.out.println(id);
-    System.out.println(name);
-    return "/index.jsp";
-}
-```
-
-若是对象，{属性名}与对象属性名对应上则会自动匹配
-
-## @SessionAttribute
-
-用在类上面的，写入session的：
-
-```java
-@Controller
-// 通过model中指定的属性去写入到session,同时也会从session中写入指定的属性到model,
-// 所以使用SessionAttributes的情况下 model和session是共同的
-// 使用该方式设置session是依赖model
-@SessionAttributes("type")
-public class DTVController {
-   @RequestMapping("output1")
-   public String output1(Model model){
-       model.addAttribute("type","hello,Springmvc");//此model的type值会被设置到session中
-       return "output";
-  }
-}
-```
-
-用在参数上面的，负责读取session，默认指定的属性是必须要存在的，如果不存在则会报错，可以设置required =false 不需要必须存在，不存在默认绑定null。
-
-```java
-@RequestMapping("/getSession")
-public String getSession(@SessionAttribute(value="type",required = false) String type){
-    System.out.println(type);
-    return "main";
-}
-```
-
-## **@ModelAttribute**
-
-**用在方法上:**@ModelAttribute的方法会在当前处理器中所有的处理方法之前调用
-
-**用在参数上:**可以省略，加上则会从model中获取一个指定的属性和参数进行合并，因为model和sessionAttribute具有共通的特性，所以如果session中有对应的属性也会进行合并
-
-注意:若通过@ModelAttribute来设置**单例,类级别的变量**存在线程安全问题。
-
-## @RequestMapping
-
-@RequestMapping用来匹配客户端发送的请求，可以在方法上使用，也可以在类上使用。
-
-- 方法：表示用来匹配要处理的请求。
-- 类上：表示为当前类的所有方法的请求地址添加一个前置路径，访问的时候必须要添加此路径。
-
-注意：在整个项目的不同方法上不能包含相同的@RequestMapping值。
-
-```java
-/**
-* @RequestMapping包含三种模糊匹配的方式，分别是：
-* ？：能替代任意一个字符
-* *: 能替代任意多个字符和一层路径
-* **：能代替多层路径
-*/
- @RequestMapping(value = "/**/h*llo?")
- public String hello5(){}
-```
-
-
-
-# 拓展
-
-1. springmvc 控制器是不是单例的？如果是单例的会出现什么问题？怎么解决？
-
-spring MVC依赖spring容器，默认是单例的，单例类若存在类级别变量可能存在线程安全问题,可以通过
-
-- 声明成方法级别变量
-- 使用ThreadLocal存储变量
-
-
-
-# 接收复杂对象类型参数
+### 接收复杂对象类型参数
 
 spring mvc中的controller默认只能自动解析填充表单提交的http请求里面的数据到复杂对象类型
 
@@ -285,4 +255,113 @@ public class HelloSpringMvc {
 使用postman调用测试:
 
 ![image-20210427235141780](https://gitee.com/Zeebrary/PicBed/raw/master/img/image-20210427235141780.png)
+
+### @PathVariable
+
+用于rest风格的参数获取，
+
+```java
+@RequestMapping("/user/{id}/{username}")
+public String path01(@PathVariable("id") Integer id,@PathVariable("username") String name){
+    System.out.println(id);
+    System.out.println(name);
+    return "/index.jsp";
+}
+```
+
+若是对象，{属性名}与对象属性名对应上则会自动匹配
+
+## @CookieValue              
+
+获取cookie中的某个属性,使用方式同@RequestHeader
+
+```java
+@RequestMapping("/params")
+public String paramsRequest(@CookieValue Map cookie){
+    System.out.println(cookie);
+    return cookie.toString();
+}
+```
+
+## @SessionAttribute&@SessionAttributes
+
+@SessionAttributes是用在类上面的，加上之后,此controller里面所有model写入的同名属性，都会同步写入session：
+
+```java
+@Controller
+// 通过model中对应的属性去写入到session,同时也会从session中写入指定的属性到model,
+// 所以使用SessionAttributes的情况下 model和session是共同的
+// 使用该方式设置session是依赖model
+@SessionAttributes("type")
+public class DTVController {
+   @RequestMapping("output1")
+   public String output1(Model model){
+       model.addAttribute("type","hello,Springmvc");//此model的type值会被设置到session中
+       return "output";
+  }
+}
+```
+
+@SessionAttribute用在参数上面的，用来读取session中对应的值，默认指定的属性是必须要存在的，如果不存在则会报错，可以设置required =false 不需要必须存在，不存在默认绑定null。
+
+```java
+@RequestMapping("/getSession")
+public String getSession(@SessionAttribute(value="type",required = false) String type){
+    System.out.println(type);
+    return "main";
+}
+```
+
+由于`@SessionAttributes`会影响controller下所有接口的model行为，有时需要更细粒度的控制的话，还是得采用耦合servlet的方式，首先添加servlet依赖
+
+```java
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>3.1.0</version>
+</dependency>
+```
+
+然后在controller上通过自动注入的方式来操作session:
+
+```java
+@Controller
+//@SessionAttributes({"type","scope"})
+public class SessionController {
+
+	@Autowired
+	private HttpSession httpSession;
+	
+	@RequestMapping(value = {"/setSession"})
+	public ModelAndView modelandview(Model model){
+		ModelAndView mv = new ModelAndView("model");
+        //手动设置session
+		httpSession.setAttribute("scope","modelandview");
+		mv.addObject("type","郝泽");
+		return mv;
+	}
+    
+    @RequestMapping(value = {"/getSession"})
+	public ModelAndView session(@SessionAttribute("scope")String scope){
+        //此处还是可以使用@SessionAttribute获取到session
+		ModelAndView mv = new ModelAndView("model");
+		System.out.println(scope);
+		return mv;
+	}
+}
+```
+
+
+
+## **@ModelAttribute**
+
+**用在方法上:**@ModelAttribute的方法会在当前处理器中所有的处理方法之前调用
+
+**用在参数上:**可以省略，加上则会从model中获取一个指定的属性和参数进行合并，因为model和sessionAttribute具有共通的特性，所以如果session中有对应的属性也会进行合并
+
+注意:若通过@ModelAttribute来设置**单例,类级别的变量**存在线程安全问题。
+
+
+
+
 

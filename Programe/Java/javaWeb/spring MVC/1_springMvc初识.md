@@ -83,8 +83,9 @@ maven项目中，并没有web项目的web文件夹,选中项目,右键`add frame
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd">
     <context:component-scan base-package="mvc.**"></context:component-scan>
     
-	<!--解决使用@ResponseBody返回报文中文乱码-->
+    <!--mvc:annotation-drive 启动spring mvc注解-->
     <mvc:annotation-driven>
+	<!--解决使用@ResponseBody返回报文中文乱码-->
         <mvc:message-converters>
             <bean class="org.springframework.http.converter.StringHttpMessageConverter">
                 <property name="supportedMediaTypes">
@@ -97,6 +98,9 @@ maven项目中，并没有web项目的web文件夹,选中项目,右键`add frame
             </bean>
         </mvc:message-converters>
     </mvc:annotation-driven>
+    
+    <!--定义静态资源文件路径,通过/resource/资源路径名即可访问静态资源-->
+    <mvc:resources mapping="/resources/**" location="/resources/"></mvc:resources>
 </beans>
 ```
 
@@ -150,4 +154,32 @@ public class HelloSpringMvc {
 > - 视图解析器将解析的逻辑视图名传给DispatcherServlet。
 > - DispatcherServlet根据视图解析器解析的视图结果，调用具体的视图，进行视图渲染
 > - 将响应数据返回给客户端
+
+在`DispatcherServlet.properties`中可以看到spring定义的一些默认类：
+
+```properties
+# Default implementation classes for DispatcherServlet's strategy interfaces.
+# Used as fallback when no matching beans are found in the DispatcherServlet context.
+# Not meant to be customized by application developers.
+
+org.springframework.web.servlet.LocaleResolver=org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver
+org.springframework.web.servlet.ThemeResolver=org.springframework.web.servlet.theme.FixedThemeResolver
+#处理映射器
+org.springframework.web.servlet.HandlerMapping=org.springframework.web.servlet.handler.BeanNameUrlHandlerMapping,\
+	org.springframework.web.servlet.mvc.annotation.DefaultAnnotationHandlerMapping
+#处理适配器
+org.springframework.web.servlet.HandlerAdapter=org.springframework.web.servlet.mvc.HttpRequestHandlerAdapter,\
+	org.springframework.web.servlet.mvc.SimpleControllerHandlerAdapter,\
+	org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerAdapter
+#处理异常解析器
+org.springframework.web.servlet.HandlerExceptionResolver=org.springframework.web.servlet.mvc.annotation.AnnotationMethodHandlerExceptionResolver,\
+	org.springframework.web.servlet.mvc.annotation.ResponseStatusExceptionResolver,\
+	org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver
+
+org.springframework.web.servlet.RequestToViewNameTranslator=org.springframework.web.servlet.view.DefaultRequestToViewNameTranslator
+#视图解析器
+org.springframework.web.servlet.ViewResolver=org.springframework.web.servlet.view.InternalResourceViewResolver
+
+org.springframework.web.servlet.FlashMapManager=org.springframework.web.servlet.support.SessionFlashMapManager
+```
 
