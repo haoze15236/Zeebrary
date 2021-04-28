@@ -1,10 +1,8 @@
-# 注解使用
+# http请求相关注解
 
-### 请求参数
+## @RequestParam
 
-#### @RequestParam
-
-获取http请求参数，也就是拼在url后面的参数。
+获取http请求中的键值对参数，如get/post请求中url后面的参数,或者post使用x-www-form-urlencoded格式的请求体中键值对参数。
 
 ```java
 @Controller
@@ -38,9 +36,7 @@ public @interface RequestParam {
 }
 ```
 
-
-
-#### @RequestHeader
+## @RequestHeader
 
 获取请求头的参数
 
@@ -59,7 +55,7 @@ public class HelloSpringMvc {
 }
 ```
 
-#### @CookieValue              
+## @CookieValue              
 
 获取cookie中的某个属性,使用方式同@RequestHeader
 
@@ -71,7 +67,7 @@ public String paramsRequest(@CookieValue Map cookie){
 }
 ```
 
-#### @PathVariable（restful参数）
+## @PathVariable（restful参数）
 
 ```java
 @RequestMapping("/user/{id}/{username}")
@@ -84,7 +80,7 @@ public String path01(@PathVariable("id") Integer id,@PathVariable("username") St
 
 若是对象，{属性名}与对象属性名对应上则会自动匹配
 
-#### @SessionAttribute
+## @SessionAttribute
 
 用在类上面的，写入session的：
 
@@ -113,7 +109,7 @@ public String getSession(@SessionAttribute(value="type",required = false) String
 }
 ```
 
-#### **@ModelAttribute**
+## **@ModelAttribute**
 
 **用在方法上:**@ModelAttribute的方法会在当前处理器中所有的处理方法之前调用
 
@@ -121,9 +117,7 @@ public String getSession(@SessionAttribute(value="type",required = false) String
 
 注意:若通过@ModelAttribute来设置**单例,类级别的变量**存在线程安全问题。
 
-### 请求处理
-
-#### @RequestMapping
+## @RequestMapping
 
 @RequestMapping用来匹配客户端发送的请求，可以在方法上使用，也可以在类上使用。
 
