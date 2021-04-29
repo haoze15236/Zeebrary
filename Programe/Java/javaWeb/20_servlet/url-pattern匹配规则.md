@@ -26,15 +26,9 @@
 
 当在浏览器中输入如下几种url时，都会被匹配到该servlet  http://localhost:8080/appDemo/user/users.html  http://localhost:8080/appDemo/index.html  http://localhost:8080/appDemo/user/addUser.action
 
-  
+注意：
 
-  注意：
-
-  http://localhost:8080/appDemo/user/addUser/ 是非法的url，不会被当作http://localhost:8080/appDemo/user/addUser识别
-
-  另外上述url后面可以跟任意的查询条件，都会被匹配，如
-
-  http://localhost:8080/appDemo/user/addUser?username=Tom&age=23 会被匹配到MyServlet。
+http://localhost:8080/appDemo/user/addUser/ 是非法的url，不会被当作http://localhost:8080/appDemo/user/addUser识别另外上述url后面可以跟任意的查询条件，都会被匹配，如http://localhost:8080/appDemo/user/addUser?username=Tom&age=23 会被匹配到MyServlet。
 
 #### 2 路径匹配
 

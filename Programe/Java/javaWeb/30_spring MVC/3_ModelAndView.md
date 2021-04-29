@@ -60,7 +60,7 @@ public class ModelAndViewController {
 }
 ```
 
-其中view的名称会被视图解析器解析，单体应用下，使用jsp可以看到效果，`web\WEB-INF\view\model.jsp`下代码如下:
+其中view的名称会被视图解析器解析(在[ViewReslover](4_ViewReslover.md)章节会介绍视图解析器)，单体应用下，使用jsp可以看到效果，`web\WEB-INF\view\model.jsp`下代码如下:
 
 ```jsp
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
@@ -73,5 +73,30 @@ public class ModelAndViewController {
 </body>
 </html>
 
+```
+
+## **@ModelAttribute**
+
+**用在方法上:**@ModelAttribute的方法会在当前处理器中所有的处理方法之前调用。因此可以用于初始化设置一些公共数据到model中。
+
+**用在参数上:**可以从model中获取一个指定的属性和参数进行合并。
+
+```java
+@Controller
+public class ModelAndViewController {
+    @RequestMapping(value = {"/session"})
+	public ModelAndView session(@ModelAttribute("type") String type){
+        //获取model中某个属性的值
+		ModelAndView mv = new ModelAndView("model");
+		System.out.println("type="+type);
+		return mv;
+	}
+
+	@ModelAttribute
+	public void modelAttribute(Model model){
+        //设置属性到model中
+		model.addAttribute("type","郝泽modelandview");
+	}
+}
 ```
 

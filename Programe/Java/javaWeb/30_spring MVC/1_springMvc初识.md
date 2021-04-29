@@ -131,7 +131,7 @@ public class HelloSpringMvc {
 
 # SpringMVC执行流程
 
-​		当发起请求时被前置的控制器拦截到请求，根据请求参数生成代理请求，找到请求对应的实际控制器，控制器处理请求，创建数据模型，访问数据库，将模型响应给中心控制器，控制器使用模型与视图渲染视图结果，将结果返回给中心控制器，再将结果返回给请求者。
+​		当发起http请求时被前置的控制器拦截到请求，根据请求参数生成代理请求，找到请求对应的实际控制器，控制器处理请求，创建数据模型，访问数据库，将模型响应给中心控制器，控制器使用模型与视图渲染视图结果，将结果返回给中心控制器，再将结果返回给请求者。
 
 ![https://note.youdao.com/yws/public/resource/5c9055f0c6fff47263ddf0e0d37422d5/xmlnote/7A49C57D2B984A1EABE723B1A45E9873/E75F3823251F4CB693635E55C66B71FF/2580](https://note.youdao.com/yws/public/resource/5c9055f0c6fff47263ddf0e0d37422d5/xmlnote/7A49C57D2B984A1EABE723B1A45E9873/E75F3823251F4CB693635E55C66B71FF/2580)
 

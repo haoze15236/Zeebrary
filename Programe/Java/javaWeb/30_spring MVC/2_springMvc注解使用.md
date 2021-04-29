@@ -1,5 +1,7 @@
 # http请求相关注解
 
+> 此部分是按照[10_web基础](../10_web基础/http请求模型.md)中request请求来逐个讲解平常开发中会用到的注解,其他注解后面涉及到再说。
+
 ## 请求行(url)
 
 ### @RequestMapping
@@ -81,6 +83,88 @@ public class HelloSpringMvc {
 	}
 }
 ```
+
+### @CookieValue              
+
+获取cookie中的某个属性,使用方式同@RequestHeader
+
+```java
+@RequestMapping("/params")
+public String paramsRequest(@CookieValue Map cookie){
+    System.out.println(cookie);
+    return cookie.toString();
+}
+```
+
+### @SessionAttribute&@SessionAttributes
+
+@SessionAttributes是用在类上面的，加上之后,此controller里面所有model方式(`Map`,`ModelMap`,`Model`,`ModelAndView`)写入的同名属性，都会同步**写入**session：
+
+```java
+@Controller
+// 通过model中对应的属性去写入到session,同时也会从session中写入指定的属性到model,
+// 所以使用SessionAttributes的情况下 model和session是共同的
+// 使用该方式设置session是依赖model
+@SessionAttributes("type")
+public class DTVController {
+   @RequestMapping("output1")
+   public String output1(Model model){
+       model.addAttribute("type","hello,Springmvc");//此model的type值会被设置到session中
+       return "output";
+  }
+}
+```
+
+@SessionAttribute用在参数上面的，用来**读取**session中对应的值，默认指定的属性是必须要存在的，如果不存在则会报错，可以设置required =false 不需要必须存在，不存在默认绑定null。
+
+```java
+@RequestMapping("/getSession")
+public String getSession(@SessionAttribute(value="type",required = false) String type){
+    System.out.println(type);
+    return "main";
+}
+```
+
+由于`@SessionAttributes`会影响controller下所有接口的model行为，有时需要更细粒度的控制的话，还是得采用耦合servlet的方式，首先添加servlet依赖
+
+```java
+<dependency>
+    <groupId>javax.servlet</groupId>
+    <artifactId>javax.servlet-api</artifactId>
+    <version>3.1.0</version>
+</dependency>
+```
+
+然后在controller上通过自动注入的方式来操作session:
+
+```java
+@Controller
+//@SessionAttributes({"type","scope"})
+public class SessionController {
+
+	@Autowired
+	private HttpSession httpSession;
+	
+	@RequestMapping(value = {"/setSession"})
+	public ModelAndView modelandview(Model model){
+		ModelAndView mv = new ModelAndView("model");
+        //手动设置session
+		httpSession.setAttribute("scope","modelandview");
+		mv.addObject("type","郝泽");
+		return mv;
+	}
+    
+    @RequestMapping(value = {"/getSession"})
+	public ModelAndView session(@SessionAttribute("scope")String scope){
+        //此处还是可以使用@SessionAttribute获取到session
+		ModelAndView mv = new ModelAndView("model");
+		System.out.println(scope);
+		return mv;
+	}
+}
+```
+
+这种方式下,session的数据跟model的数据不会一致。spring mvc底层自动注入`HttpSession`时使用的ThreadLocal来存储不同请求的session值，因此并不会有线程安全问题。
 
 ## 请求数据
 
@@ -270,98 +354,6 @@ public String path01(@PathVariable("id") Integer id,@PathVariable("username") St
 ```
 
 若是对象，{属性名}与对象属性名对应上则会自动匹配
-
-## @CookieValue              
-
-获取cookie中的某个属性,使用方式同@RequestHeader
-
-```java
-@RequestMapping("/params")
-public String paramsRequest(@CookieValue Map cookie){
-    System.out.println(cookie);
-    return cookie.toString();
-}
-```
-
-## @SessionAttribute&@SessionAttributes
-
-@SessionAttributes是用在类上面的，加上之后,此controller里面所有model写入的同名属性，都会同步写入session：
-
-```java
-@Controller
-// 通过model中对应的属性去写入到session,同时也会从session中写入指定的属性到model,
-// 所以使用SessionAttributes的情况下 model和session是共同的
-// 使用该方式设置session是依赖model
-@SessionAttributes("type")
-public class DTVController {
-   @RequestMapping("output1")
-   public String output1(Model model){
-       model.addAttribute("type","hello,Springmvc");//此model的type值会被设置到session中
-       return "output";
-  }
-}
-```
-
-@SessionAttribute用在参数上面的，用来读取session中对应的值，默认指定的属性是必须要存在的，如果不存在则会报错，可以设置required =false 不需要必须存在，不存在默认绑定null。
-
-```java
-@RequestMapping("/getSession")
-public String getSession(@SessionAttribute(value="type",required = false) String type){
-    System.out.println(type);
-    return "main";
-}
-```
-
-由于`@SessionAttributes`会影响controller下所有接口的model行为，有时需要更细粒度的控制的话，还是得采用耦合servlet的方式，首先添加servlet依赖
-
-```java
-<dependency>
-    <groupId>javax.servlet</groupId>
-    <artifactId>javax.servlet-api</artifactId>
-    <version>3.1.0</version>
-</dependency>
-```
-
-然后在controller上通过自动注入的方式来操作session:
-
-```java
-@Controller
-//@SessionAttributes({"type","scope"})
-public class SessionController {
-
-	@Autowired
-	private HttpSession httpSession;
-	
-	@RequestMapping(value = {"/setSession"})
-	public ModelAndView modelandview(Model model){
-		ModelAndView mv = new ModelAndView("model");
-        //手动设置session
-		httpSession.setAttribute("scope","modelandview");
-		mv.addObject("type","郝泽");
-		return mv;
-	}
-    
-    @RequestMapping(value = {"/getSession"})
-	public ModelAndView session(@SessionAttribute("scope")String scope){
-        //此处还是可以使用@SessionAttribute获取到session
-		ModelAndView mv = new ModelAndView("model");
-		System.out.println(scope);
-		return mv;
-	}
-}
-```
-
-
-
-## **@ModelAttribute**
-
-**用在方法上:**@ModelAttribute的方法会在当前处理器中所有的处理方法之前调用
-
-**用在参数上:**可以省略，加上则会从model中获取一个指定的属性和参数进行合并，因为model和sessionAttribute具有共通的特性，所以如果session中有对应的属性也会进行合并
-
-注意:若通过@ModelAttribute来设置**单例,类级别的变量**存在线程安全问题。
-
-
 
 
 

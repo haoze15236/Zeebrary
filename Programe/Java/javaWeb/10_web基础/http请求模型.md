@@ -1,4 +1,4 @@
-# http请求
+# Request请求
 
 http请求可以划分为如下几个部分:
 
@@ -74,27 +74,4 @@ http请求可以划分为如下几个部分:
 
 告诉服务器，客户端使用的操作系统、浏览器版本和名称
 
-# javaWeb 模型
-
-![](https://gitee.com/Zeebrary/PicBed/raw/master/img/web/web请求模型.jpg)
-
-## Request
-
-## Respose
-
-## Servlet&JSP
-
-## Filter
-
-## Listener
-
-## Cookies
-
-## Session
-
-## ServletContext
-
-## ServletConfig
-
-
-
+# Response响应
