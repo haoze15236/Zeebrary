@@ -99,38 +99,41 @@ public class StringToDateConverter implements Converter<String, Date> {
 
 其实底层同上面默认类型加载器初始化类似，只是这里是使用ConversionServiceFactoryBean实现了`FactoryBean`接口和`InitializingBean`接口，在`afterPropertiesSet`实现中将类型转换器保存在converters中。
 
-# **数据格式化**
+- **数据格式化**
 
-Spring 提供了两个可以用于格式化数字、日期和时间的注解@NumberFormat和@DateTimeFormat，这两个标签可以用于javabean的属性或方法参数上。@NumberFormat可以用来格式化任何的数字的基本类型（如int，long）或java.lang.Number的实例（如 BigDecimal, Integer)。@DateTimeFormat可以用来格式化java.util.Date、java.util.Calendar和 java.util.Long类型.
-
-要指定数字或日期/时间类型的属性，只需要在其上添加 @NumberFormat或@DateTimeFormat注解接可以了。
+Spring 另外提供了两个可以用于格式化数字、日期和时间的类型转换器。通过注解@NumberFormat和@DateTimeFormat，这两个标签可以用于javabean的属性或方法参数上。@NumberFormat可以用来格式化任何的数字的基本类型（如int，long）或java.lang.Number的实例（如 BigDecimal, Integer)。@DateTimeFormat可以用来格式化java.util.Date、java.util.Calendar和 java.util.Long类型.
 
 ## @NumberFormat
 
-- - **pattern**。类型为String，使用自定义的数字格式化字符串，"##,###.##"。
-  - **style**。类型为NumberFormat.Style，常用值：
+- **pattern**。类型为String，使用自定义的数字格式化字符串，"##,###.##"。
 
-- - - Style.NUMBER正常数字类型
-    - Style.PERCENT百分数类型
-    - Style.CURRENCY 货币类型
+- **style**。类型为NumberFormat.Style，常用值：
+  - Style.NUMBER正常数字类型
+  - Style.PERCENT百分数类型
+  - Style.CURRENCY 货币类型
 
 ## @DateTimeFormat
 
-- - **iso**。类型为DateTimeFormat.ISO
+- **iso**。类型为DateTimeFormat.ISO
 
-- - - DateTimeFormat.ISO.DATE: 格式yyyy-MM-dd。
-    - DateTimeFormat.ISO.DATE_TIME: 格式yyyy-MM-dd HH:mm:ss .SSSZ。
-    - DateTimeFormat.ISO.TIME: 格式HH:mm:ss .SSSZ。
-    - DateTimeFormat.ISO.NONE: 表示不使用ISO格式的时间。
+  - DateTimeFormat.ISO.DATE: 格式yyyy-MM-dd。
 
-- - **pattern**。类型为String，使用自定义的时间格式化字符串。
-  - **style**。类型为String，通过样式指定日期时间的格式，由两位字符组成，第1位表示日期的样式，第2位表示时间的格式：
+  - DateTimeFormat.ISO.DATE_TIME: 格式yyyy-MM-dd HH:mm:ss .SSSZ。
+  - DateTimeFormat.ISO.TIME: 格式HH:mm:ss .SSSZ。
+  - DateTimeFormat.ISO.NONE: 表示不使用ISO格式的时间。
 
-- - - S: 短日期/时间的样式；
-    - M: 中日期/时间的样式；
-    - L: 长日期/时间的样式；
-    - F: 完整日期/时间的样式；
-    - -: 忽略日期/时间的样式；
+- **pattern**。类型为String，使用自定义的时间格式化字符串。
+
+- **style**。类型为String，通过样式指定日期时间的格式，由两位字符组成，第1位表示日期的样式，第2位表示时间的格式：
+
+  - S: 短日期/时间的样式；
+
+  - M: 中日期/时间的样式；
+  - L: 长日期/时间的样式；
+  - F: 完整日期/时间的样式；
+  - -: 忽略日期/时间的样式；
+
+<span style="color:red">若自定义了类型转换器和这两个注解冲突，则注解会失效</span>
 
 ### JSR303
 
@@ -142,7 +145,7 @@ Hibernate Validator 扩展注解:
 
 ![https://note.youdao.com/yws/public/resource/5c9055f0c6fff47263ddf0e0d37422d5/xmlnote/854CD1465613401C93050C2AE246EAF8/1FBB2006046A4CAAA0B255ACD7E9AB33/3181](https://note.youdao.com/yws/public/resource/5c9055f0c6fff47263ddf0e0d37422d5/xmlnote/854CD1465613401C93050C2AE246EAF8/1FBB2006046A4CAAA0B255ACD7E9AB33/3181)
 
-添加依赖：
+添加依赖：idea记得将jar包put into /WEB-INF/lib,否则不会生效
 
 ```xml
 <!--JSR349数据认证依赖-->
