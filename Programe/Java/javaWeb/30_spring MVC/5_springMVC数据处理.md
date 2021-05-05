@@ -162,33 +162,16 @@ Hibernate Validator 扩展注解:
 
 解析请求中json转换成注解修饰的参数
 
-**以RequestParam接收**
-
-前端传来的是json数据不多时：
-
-```java
-@PostMapping("/json/request01")
-@ResponseBody
-public  User responseJson(@RequestBody String name){
-    User user = new User(1,"12346",new Date());
-    System.out.println(name);
-    return user;
-
-}
-```
-
 **以实体类方式接收**
 
 前端传来的是一个json对象时：{ id:1,name:xx},可以用实体类直接进行自动绑定
 
 ```java
-@PostMapping(value="/json/request02",consumes = "application/json")
+@RequestMapping("/student")
 @ResponseBody
-public  User requestJson02(@RequestBody User user){
-    User user2 = new User(1, "12346",new Date());
-    System.out.println(user);
-    return user2;
-
+public String student(@RequestBody Student student){
+    System.out.println(student.getName());
+    return "model";
 }
 ```
 
@@ -197,13 +180,11 @@ public  User requestJson02(@RequestBody User user){
 前端传来的是一个json对象时：{ id:1,name:xx},可以用Map来获取
 
 ```java
-@PostMapping(value="/json/request03",consumes = "application/json")
+@RequestMapping("/json/map")
 @ResponseBody
-public  User requestJson03(@RequestBody Map<String,String> map){
-    User user2 = new User(1, "徐庶","12346",new Date());
-    System.out.println(map);
-    return user2;
-
+public String jsonMap(@RequestBody Map<String,Object> studentMap){
+    System.out.println(studentMap.get("name"));
+    return "model";
 }
 ```
 
@@ -212,19 +193,40 @@ public  User requestJson03(@RequestBody Map<String,String> map){
 当前端传来这样一个json数组：[{ id:1,name:xx},{ id:1,name:xx},{ id:1,name:xx},...]时，用List接收 
 
 ```java
-@PostMapping(value="/json/request04",consumes = "application/json")
+@RequestMapping("/json/list")
 @ResponseBody
-public  User requestJson04(@RequestBody List<User> list){
-    User user2 = new User(1, "徐庶","12346",new Date());
-    System.out.println(list);
-    return user2;
-
+public String jsonList(@RequestBody List<Student> student){
+    System.out.println(student.get(0).getName());
+    return "model";
 }
 ```
 
 ## @ResponseBody
 
 将返回内容转换成json格式
+
+- 添加spring默认的jackson依赖，使用idea记得put into WEB-INF/lib
+
+```xml
+<!--jackson依赖-->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>2.12.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>2.12.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.12.3</version>
+        </dependency>
+```
+
+- 方法上添加`@ResponseBody`
 
 ```java
 @RequestMapping("/params")
