@@ -6,7 +6,7 @@
 
   **STATEMENT** :表示为语句级别，由于mybatis每次执行语句之后都会关闭statement，所以其实相当于关闭了一级缓存。(经测试，即使使用BATCH执行器，也无法从缓存获取结果)
 
-  **SESSION** :默认级别，开启一个sqlSession之后，在同一个session下执行的相同sql，会通过缓存返回结果。但是存在2种可能导致一级session级别的一级缓存失效
+  **SESSION** :默认级别，开启一个sqlSession之后，在同一个session下执行的相同sql，会通过缓存返回结果(**从日志来看就是只执行了一次sql**)。但是存在2种可能导致一级session级别的一级缓存失效
 
   - 两次相同sql之间执行了增删改的操作,会导致缓存刷新。
   - 手动清楚了一级缓存`sqlSession.clearCache();`
@@ -53,7 +53,41 @@ debugger在getObject()方法可以看到，缓存的key如下：
 
 > 二级缓存是事务性的。这意味着，当 SqlSession 完成并提交时，或是完成并回滚，但没有执行 flushCache=true 的 insert/delete/update 语句时，缓存会获得更新。
 
-因为flushCache=true的语句被执行会清空一级缓存，**所在namespace的**二级缓存,而insert/delete/update语句默认 flushCache=true。所以上面一级缓存失效有一个原因就是执行了增删改的操作。而当缓存没有被清空的时候，那么只有在SqlSession 完成并提交时，或是完成并回滚的时候，本次sqlSession中的查询的数据才会被缓存进二级缓存。
+因为flushCache=true的语句被执行会清空一级缓存，**所在namespace的**二级缓存,而insert/delete/update语句默认 flushCache=true。所以上面一级缓存失效有一个原因就是执行了增删改的操作。而当缓存没有被清空的时候，那么只有在SqlSession 完成并提交时，或是完成并回滚的时候，本次sqlSession中的查询的数据才会被缓存进二级缓存。测试代码如下:
+
+```java
+	@Test
+	public void testCache(){
+		try (SqlSession session = sqlSessionFactory.openSession(true)) {
+			ExpReportHeaderMapper mapper = session.getMapper(ExpReportHeaderMapper.class);
+            //执行第一次,写入缓存
+			System.out.println(mapper.selectOne(1));
+            //执行第二次,未走二级缓存，因为此时SqlSession并未完成并提交或回滚
+			System.out.println(mapper.selectOne(1));
+            //执行同mapper下的flushCache=ture的语句,导致缓存刷新
+			ExpReportHeader expReportHeader = new ExpReportHeader();
+			expReportHeader.setBillNumber("haoze");
+			expReportHeader.setBankInfo("asdafw");
+			mapper.insertOne(expReportHeader);
+		}
+		try (SqlSession session2 = sqlSessionFactory.openSession(true)) {
+			ExpReportHeaderMapper mapper2 = session2.getMapper(ExpReportHeaderMapper.class);
+            //执行第三次,缓存中由于被刷新,未获取到，依然从数据库取,并写入缓存
+			System.out.println(mapper2.selectOne(1));
+		}
+        try (SqlSession session3 = sqlSessionFactory.openSession(true)) {
+			ExpReportHeaderMapper mapper3 = session3.getMapper(ExpReportHeaderMapper.class);
+            //执行第四次,缓存命中
+			System.out.println(mapper3.selectOne(1));
+		}
+	}
+```
+
+输出时，会有日志提示：`0.0` 表示缓存命中为未命中,`0.20`表示一共执行5次，缓存命中一次。
+
+```
+22:52:20.896 [main] DEBUG mybatis.mapper.ExpReportHeaderMapper - Cache Hit Ratio [mybatis.mapper.ExpReportHeaderMapper]: 0.20
+```
 
 <span style="color:red">若同时开启一级缓存和二级缓存，那么获取顺序是先从二级缓存中获取，再去一级缓存中获取。</span>
 
@@ -75,4 +109,38 @@ debugger在getObject()方法可以看到，缓存的key如下：
 因此，我们可以通过整合专业的缓存中间件来解决这个问题。
 
 ## mybatis整合redis
+
+[官方文档](http://mybatis.org/redis-cache/)
+
+- 添加依赖
+
+```xml
+<dependency>
+    <groupId>org.mybatis.caches</groupId>
+    <artifactId>mybatis-redis</artifactId>
+    <version>1.0.0-beta2</version>
+</dependency>
+```
+
+- 添加redis配置文件
+
+```properties
+redis.host=localhost
+redis.port=6379
+redis.connectionTimeout=5000
+redis.soTimeout=5000
+redis.password=
+redis.database=0
+redis.clientName=
+redis.serializer=jdk
+
+```
+
+- 在需要开启redis二级缓存的mapper文件上添加二级缓存配置
+
+```xml
+<cache  type="org.mybatis.caches.redis.RedisCache"/>
+```
+
+**注意：使用第三方缓存时，返回的javaBean对象必须实现了Serializable接口,才能正确的从缓存读取数据。**和mybatis自带二级缓存一样，在调用flushCache="true"的方法时会刷新缓存,但是cache上`eviction`,`size`,`readOnly`等属性将不再有作用。
 
