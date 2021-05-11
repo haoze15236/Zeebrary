@@ -2,7 +2,7 @@
 
 ## HashMap
 
-采用位运算取模，让index分布更加均匀
+底层结构首先是一个初始化为16的数组（也叫hash桶）,当数组元素超过hash桶总数的加载因子时(默认是0.75)，会将hash桶扩容至原来的两倍。
 
 - 加载因子为什么是0.75？
 
@@ -10,21 +10,31 @@
 
   过完扩容，会增加hash碰撞的几率，导致链表过长，降低查询效率
 
+- 为什么是2倍扩容?
+
+  保证扩容后元素的key不变。
+
 >  jdk1.7之前
 
-数组+链表
+底层结构是：数组+单链表
 
-扩容时:	采用头插，链表元素倒序,<span style="color:red">多线程下扩容有可能形成环形链表</span>，导致之后put元素若碰到此环形链表导致死循环
+扩容时:	采用头插，链表元素倒序,<span style="color:red">多线程下扩容有可能形成环形链表</span>，导致之后put元素若碰到此环形链表导致死循环。
 
 > jdk1.8之后
 
-数组+链表+红黑树
+数组+链表/红黑树
 
-链表转红黑树阈值默认为8，链表长度>=8,数组容量>=64时会转为红黑树，否则优先扩容。使用红黑树提升查询速度，时间复杂度为O(logn)
+链表转红黑树阈值默认为8，链表长度>=8并且数组容量>=64时会转为红黑树，否则优先扩容。而当红黑树节点<=6时,重新转回单链表
+
+使用红黑树提升查询速度，时间复杂度为O(logn)
 
 扩容时: 	使用元素的hash值与数组长度进行与运算,计算扩容后被用于计算index的高位值,若不为0,则将元素放置到高位链表，置于扩容后的数组位置。
 
 <span style="color:red">虽然解决了多线程会现成环形链表导致死循环的问题，但是，在put元素时，多线程情况下仍然会出现丢失数据的情况。</span>
+
+
+
+采用位运算取模，让index分布更加均匀
 
 ```java
 Node<K,V> loHead = null, loTail = null;
@@ -58,7 +68,7 @@ if (hiTail != null) {
 }
 ```
 
-默认是16,为了跟简洁讲清楚，我们假设比如数组从8扩容到16
+默认是16,为了更简洁的讲清楚，我们假设比如数组从8扩容到16
 
 ```java
 //**********************hash值1*****************************
@@ -95,11 +105,11 @@ if (hiTail != null) {
 
 [什么是ConcurrentHashMap](https://mp.weixin.qq.com/s/1yWSfdz0j-PprGkDgOomhQ)
 
-通过ReentrantLock实现分段锁segment，保证不同segment之间可并发写入。
+底层还是数组+链表，但是引入了继承ReentrantLock的segment这个概念,hash桶中存放的时segment,segment相当于一个带锁的hashMap,通过这种方式保证不同segment之间可并发写入。
 
 > 1.8
 
-通过synchronized+CAS算法保证线程安全
+通过synchronized+CAS算法保证线程安全,1.7时 synchronized有一波大的优化。
 
 ```java
 final V putVal(K key, V value, boolean onlyIfAbsent) {
@@ -180,7 +190,13 @@ final V putVal(K key, V value, boolean onlyIfAbsent) {
 
 ## ArrayList
 
-线程不安全，查询快，插入，删除慢
+底层是数组,通过数组下标直接查询,**查询速度快,增删的效率底**,因为涉及到数组元素拷贝。
+**线程不安全**:新增,删除元素都是直接通过下标操作,多线程下肯定会出现IndexOutOfBoundsException。
+初始化时,数据量为0,add时，默认为10,每次扩容成之前的1.5倍。`int newCapacity = oldCapacity + (oldCapacity >> 1);`
+
+## LinkedList
+
+带有头指针和尾指针的双向链表,支持头插`linkFirst(E)`，尾插`linkLast(E)`,插入删除的效率高,内部维护了一个size属性记录链表长度。
 
 ## CopyOnWriteArrayList
 
@@ -188,7 +204,18 @@ final V putVal(K key, V value, boolean onlyIfAbsent) {
 
 ## Vector
 
-使用synchronized修饰了方法,线程安全,但是调用的时候由于底层时数组，可能存在数组越界的情况;
+底层是数组,扩容是扩容成之前的2倍，由于大部分方式使用了synchronized修饰,所以这些方法是线程安全的,但是多个方法之间并不保证，例如：
+
+```java
+public void put(String element){
+    if (!vector.contains(element)) 
+    	//线程1通过判断,还没执行add操作时,线程2也会通过判断,此时就会存在数组越界的情况
+        vector.add(element); 
+    }
+}
+```
+
+
 
 # Set
 

@@ -1,3 +1,5 @@
+**提示**： spring MVC是一个在web容器中发挥作用的框架,基于spring，所以在学习之前需要先了解spring 和javaWeb的知识,
+
 # 项目搭建
 
 创建一个maven项目
