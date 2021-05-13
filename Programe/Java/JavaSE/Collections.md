@@ -1,5 +1,11 @@
 # Map
 
+```java
+//jdk8,computeIfAbsent:若key对应的value为空，会将第二个参数的返回值存入并返回
+Map<String, set<String>> map = new HashMap<>();
+Set<String> set = map.computeIfAbsent(key, k -> new HashSet<>());
+```
+
 ## HashMap
 
 底层结构首先是一个初始化为16的数组（也叫hash桶）,当数组元素超过hash桶总数的加载因子时(默认是0.75)，会将hash桶扩容至原来的两倍。
@@ -218,6 +224,14 @@ public void put(String element){
 
 
 # Set
+
+```java
+//set转数组
+Set<Class<?>> interfaces = new HashSet<>();
+Class<?>[] classes = interfaces.toArray(new Class<?>[0]);
+```
+
+
 
 ## CopyOnWriteArraySet
 
