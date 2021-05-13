@@ -312,7 +312,45 @@ public class ExpReportHeaderLine extends ExpReportLine{
 </select>
 ```
 
-注意：<span style="color:red">sql中获取参数要使用${}</span>,如果使用#{}会被拼上引号，因为是我们自己定义的参数，所以不存在sql注入风险。
+注意：<span style="color:red">sql标签中使用${}获取参数是直接获取include标签定义的同名propert的value值</span>,如果使用#{}，则是会使用占位符,并从外部mapper传进来的参数里面获取具体的参数值。如
+
+**mapper接口**,外部传一个值为"外部"的desc参数进来。
+
+```java
+List<ExpReportLine> selectParam(@Param("billLine")BillLine billLine,@Param("desc")String desc);
+```
+
+**mapper.xml文件**，其中`${desc}`是property传过来的值`内部include`，而` #{desc}`是从mapper传过来的参数"外部"。
+
+```xml
+<sql id="lineSql">
+        SELECT
+        l.*,
+        '${desc}',
+        #{desc}
+        FROM
+        exp_report_line l
+        <where>
+            <if test="billLine.billLineId!=null">
+                AND l.EXP_REPORT_LINE_ID = #{billLine.billLineId}
+            </if>
+            <if test="billLine.billHeaderId!=null">
+                AND l.EXP_REPORT_HEADER_ID = #{billLine.billHeaderId}
+            </if>
+            <if test="desc!=null">
+                AND l.description = #{desc}
+            </if>
+        </where>
+    </sql>
+
+    <select id="selectParam" parameterType="mybatis.dto.ExpReportLine" resultMap="BaseResultMap">
+        <include refid="lineSql">
+            <property name="desc" value="内部include"/>
+        </include>
+    </select>
+```
+
+
 
 # [动态SQL](https://mybatis.org/mybatis-3/zh/dynamic-sql.html)
 
