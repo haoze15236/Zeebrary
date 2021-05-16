@@ -28,6 +28,23 @@
 
 ### 配置元数据
 
+- **引入pom依赖**
+
+```xml
+<!--spring 声明式事务依赖-->
+<dependency>
+    <groupId>org.springframework</groupId>
+    <artifactId>spring-jdbc</artifactId>
+    <version>5.2.8.RELEASE</version>
+</dependency>
+<!--配置druid数据源依赖-->
+<dependency>
+    <groupId>com.alibaba</groupId>
+    <artifactId>druid</artifactId>
+    <version>1.1.23</version>
+</dependency>
+```
+
 #### 基于xml配置
 
 ```xml

@@ -601,7 +601,7 @@ public class AppConfig {
 
 #### @ComponentScan
 
-相当于原来XML文件中的包扫描标签
+相当于原来XML文件中的包扫描标签,<span style="color:Red">若没有配置扫描包路径，会把当前配置类所在的包当作扫描包进行扫描。</span>
 
 #### @PropertySource
 

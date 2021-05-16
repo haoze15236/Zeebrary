@@ -64,7 +64,6 @@
             <artifactId>commons-fileupload</artifactId>
             <version>${commons-fileupload.version}</version>
         </dependency>
-
         <!--spring依赖-->
         <dependency>
             <groupId>org.springframework</groupId>
@@ -82,7 +81,30 @@
             <artifactId>spring-aspects</artifactId>
             <version>${spring.version}</version>
         </dependency>
-
+        <!--spring 声明式事务-jdbc依赖-->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-jdbc</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <!--spring 声明式事务-事务管理器依赖-->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-tx</artifactId>
+            <version>${spring.version}</version>
+        </dependency>
+        <!--配置druid数据源依赖-->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>druid</artifactId>
+            <version>1.1.23</version>
+        </dependency>
+        <!--mybatis整合spring-->
+        <dependency>
+            <groupId>org.mybatis</groupId>
+            <artifactId>mybatis-spring</artifactId>
+            <version>2.0.6</version>
+        </dependency>
         <!--mybatis依赖-->
         <dependency>
             <groupId>mysql</groupId>
@@ -93,18 +115,6 @@
             <groupId>org.mybatis</groupId>
             <artifactId>mybatis</artifactId>
             <version>${mybatis.version}</version>
-        </dependency>
-        <!--mybatis-redis缓存-->
-        <dependency>
-            <groupId>org.mybatis.caches</groupId>
-            <artifactId>mybatis-redis</artifactId>
-            <version>1.0.0-beta2</version>
-        </dependency>
-        <!--mybatis-pageHelper分页插件-->
-        <dependency>
-            <groupId>com.github.pagehelper</groupId>
-            <artifactId>pagehelper</artifactId>
-            <version>5.2.0</version>
         </dependency>
 
         <!--slf4j日志接口-->
@@ -126,12 +136,6 @@
             <version>4.12</version>
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.16.22</version>
-        </dependency>
     </dependencies>
 </project>
 ```
@@ -141,7 +145,7 @@
 - 定义DispatcherServlet,同时指定spring MVC的xml配置文件
 - 设置请求编码
 - 设置请求拦截映射匹配
-- 设置spring容器初始化配置
+- 设置spring容器全局配置
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -205,6 +209,8 @@
 
 # spring-mvc.xml
 
+只扫描controller，配置请求映射，视图解析器,文件上传
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <beans xmlns="http://www.springframework.org/schema/beans"
@@ -214,14 +220,26 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/mvc https://www.springframework.org/schema/mvc/spring-mvc.xsd">
 
     <!--定义spring Bean扫描规则:扫描所有controller-->
-    <context:component-scan base-package="**" use-default-filters="false">
+    <context:component-scan base-package="com.**" use-default-filters="false">
         <context:include-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
     </context:component-scan>
-    
     <!--动态资源扫描-->
     <mvc:annotation-driven></mvc:annotation-driven>
     <!--静态资源扫描-->
     <mvc:default-servlet-handler/>
+
+    <!--定义静态资源文件路径,通过/resource/资源路径名即可访问静态资源-->
+    <mvc:resources mapping="/resources/**" location="/resources/"/>
+
+    <!--视图控制器,可直接通过path路径访问视图-->
+    <mvc:view-controller path="/" view-name="index"/>
+
+    <!--定义视图解析器,设置前缀和后缀-->
+    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver" name="viewResolver">
+        <property name="prefix" value="/WEB-INF/view/"/>
+        <property name="suffix" value=".jsp"/>
+    </bean>
+
 
     <mvc:annotation-driven conversion-service="conversionService">
         <mvc:message-converters>
@@ -236,41 +254,33 @@
             </bean>
         </mvc:message-converters>
     </mvc:annotation-driven>
-    <!--定义静态资源文件路径,通过/resource/资源路径名即可访问静态资源-->
-    <mvc:resources mapping="/resources/**" location="/resources/"/>
-
-    <!--定义视图解析器,设置前缀和后缀-->
-    <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver" name="viewResolver">
-        <property name="prefix" value="/WEB-INF/view/"/>
-        <property name="suffix" value=".jsp"/>
-    </bean>
-
-    <!--视图控制器,可直接通过path路径访问视图-->
-    <mvc:view-controller path="/" view-name="index"/>
-
 
     <!--请求数据转换器-->
-<!--    <bean class="org.springframework.format.support.FormattingConversionServiceFactoryBean" id="conversionService">-->
-<!--        <property name="converters">-->
-<!--            <set>-->
-<!--                <ref bean="stringToDateConverter"/>-->
-<!--            </set>-->
-<!--        </property>-->
-<!--    </bean>-->
+        <bean class="org.springframework.format.support.FormattingConversionServiceFactoryBean" id="conversionService">
+            <property name="converters">
+                <set>
+                    <ref bean="stringToDateConverter"/>
+                </set>
+            </property>
+        </bean>
 
     <!--文件上传解析器-->
     <bean class="org.springframework.web.multipart.commons.CommonsMultipartResolver" id="multipartResolver">
         <property name="defaultEncoding" value="utf-8"/>
         <property name="maxUploadSize" value="10240000000"/>
     </bean>
-    
-<!--    <mvc:interceptors>-->
-<!--        <bean class="mvc.interceptors.MyInterceptor" />-->
-<!--    </mvc:interceptors>-->
+
+    <!--    <mvc:interceptors>-->
+    <!--        <bean class="mvc.interceptors.MyInterceptor" />-->
+    <!--    </mvc:interceptors>-->
 </beans>
 ```
 
 # spring-core.xml
+
+加载除了controller之外所有需要注入到spring容器中的bean,配置数据源,事务管理器,AOP。
+
+整合mybatis，注入所有的mapper接口类，配置所有的mapper.xml文件。
 
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
@@ -278,17 +288,50 @@
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
        xmlns:aop="http://www.springframework.org/schema/aop"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd">
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:mybatis="http://mybatis.org/schema/mybatis-spring"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://mybatis.org/schema/mybatis-spring http://mybatis.org/schema/mybatis-spring.xsd">
 
     <!--定义spring Bean扫描规则:扫描除了controller外的所有bean-->
-    <context:component-scan base-package="**">
+    <context:component-scan base-package="com.**">
         <context:exclude-filter type="annotation" expression="org.springframework.stereotype.Controller"/>
     </context:component-scan>
-
+    <!--定义spring配置资源文件路劲-->
     <context:property-placeholder location="classpath:spring-config.properties"/>
-
     <!--开启AOP注解事务-->
     <aop:aspectj-autoproxy/>
+
+    <!--配置数据库连接池-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource">
+        <property name="username" value="${jdbc.username}"/>
+        <property name="password" value="${jdbc.password}"/>
+        <property name="url" value="${jdbc.url}"/>
+        <property name="driverClassName" value="${jdbc.driverClassName}"/>
+    </bean>
+
+    <!--配置spring jdbc事务管理器-->
+    <bean class="org.springframework.jdbc.datasource.DataSourceTransactionManager" id="transactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <!--开启基于注解的事务控制模式，依赖tx名称空间-->
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <bean class="org.mybatis.spring.SqlSessionFactoryBean" id="sessionFactory">
+        <property name="dataSource" ref="dataSource"/>
+        <!--配置mybatis配置文件,mybatis的setting属性只能在配置文件里定义-->
+        <property name="configLocation" value="classpath:mybatis-config.xml"/>
+        <!--指定mapper文件路径-->
+        <property name="mapperLocations" value="classpath*:/**/*Mapper.xml"/>
+    </bean>
+
+    <!--spring管理mapper接口 两种方式任选其一-->
+    <!-- 方式1：使用mybatis包扫描所有的mapper接口-->
+    <mybatis:scan base-package="com.**.mapper"/>
+    <!--方式2：通过MapperScannerConfigurer来扫描所有mapper接口注入spring容器-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="basePackage" value="*.**.mapper" />
+    </bean>
 </beans>
 ```
 

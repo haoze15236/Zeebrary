@@ -292,10 +292,9 @@ public class AppConfig {
 //&&：两个表达式同时
 execution( public int com.aop.inter.MyCalculator.*(..)) && execution(* *.*(int,int) )
 //||：任意满足一个表达式即可
-execution( public int com.aop.inter.MyCalculator.*(..)) && execution(* *.*(int,int) )
+execution( public int com.aop.inter.MyCalculator.*(..)) || execution(* *.*(int,int) )
 //！：只要不是这个位置都可以进行切入
-//&&：两个表达式同时
-execution( public int com.aop.inter.MyCalculator.*(..))
+!execution( public int com.aop.inter.MyCalculator.*(..))
 ```
 
 #### 注解申明切面

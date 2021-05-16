@@ -170,7 +170,12 @@ try (SqlSession session = sqlSessionFactory.openSession()) {
     </settings>
     <environments default="development">
         <environment id="development">
+            <!--使用jdbc做事务管理 若值为MANAGED则不运用事务-->
             <transactionManager type="JDBC"/>
+            <!--POOLED ：mybatis默认的数据源连接池
+				UNPOOLED:不使用连接池
+				JNDI:JNDI连接池，可在tomcat中使用
+				-->
             <dataSource type="POOLED">
                 <property name="driver" value="${driver}"/>
                 <property name="url" value="${url}"/>
