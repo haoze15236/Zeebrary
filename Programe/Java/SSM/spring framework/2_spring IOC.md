@@ -313,8 +313,8 @@ factory-method:配置User类中的静态工厂方法
 #### bean的生命周期回调
 
 - 使用接口实现的方式来实现生命周期的回调：
-  - 初始化方法： 实现接口： InitializingBean 重写afterPropertiesSet方法   初始化会自动调用的方法
-  - 销毁的方法： 实现接口： DisposableBean  重写destroy 方法   销毁的时候自动调用方法
+  - 初始化方法： bean实现接口： InitializingBean 重写afterPropertiesSet方法   初始化会自动调用的方法
+  - 销毁的方法： bean实现接口： DisposableBean  重写destroy 方法   销毁的时候自动调用方法
 
 什么时候销毁?
 
@@ -322,7 +322,7 @@ factory-method:配置User类中的静态工厂方法
 
 - 使用指定具体方法的方式实现生命周期的回调：
 
-在对应的bean里面创建对应的两个方法init-method="init"  destroy-method="destroy"
+在**对应的bean里面创建对应的两个方法**init-method="init"  destroy-method="destroy"
 
 ```xml
 <bean class="com.init.User" id="user3" init-method="initConfig" destroy-method="destroyConfig">
@@ -545,7 +545,11 @@ public class UserController {
 
 #### bean的生命周期回调
 
+在bean的类中使用注解修改方法
+
 ##### @PostConstruct
+
+bean初始化时会调用被@PostConstruct修饰的方法
 
 ```java
 @PostConstruct
@@ -555,6 +559,8 @@ System.out.println("bean已初始化");
 ```
 
 ##### @PreDestroy
+
+bean销毁时会调用被@PreDestroy修饰的方法
 
 ```java
 @PreDestroy
@@ -677,6 +683,37 @@ public class MyBeanDefinitionRegistrar implements ImportBeanDefinitionRegistrar 
 注册的bean的name默认为注解配置的方法名称，也可以使用name属性设置bean的name。
 
 可以使用`init-method="initByConfig" destroy-method="destroyByConfig"` 属性设置生命周期回调方法。
+
+```java
+@Configuration
+public class UserConfig {
+
+    @Bean(initMethod = "initByConfig",destroyMethod = "destroyByConfig")
+    public User user(){
+        User user = User.builder().id(1L).name("郝泽").build();
+        return user;
+    }
+
+}
+```
+
+方法要定义在bean的类中
+
+```java
+public class User {
+    private Long id;
+    private String name;
+
+
+    public void initByConfig(){
+        System.out.println("user初始化");
+    }
+
+    public void destroyByConfig(){
+        System.out.println("user销毁");
+    }
+}
+```
 
 @Bean注解在使用的时候与原来XML的`<bean/>`标签有一点区别的是这里是我们自己初始化创建bean的实例，将实例作为方法的返回值交给spring容器管理，因此我们可以**干预类的实例化过程**，而XML配置是由spring来初始化创建bean。
 

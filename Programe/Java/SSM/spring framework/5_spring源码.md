@@ -69,6 +69,8 @@ public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
 
 ## this()
 
+> 初始化bean工厂,内置的核心bean定义
+
 this()首先隐式调用了父类`GenericApplicationContext`的构造方法,为spring容器初始化了`BeanFactory`,使用的是最底层实现类`DefaultListableBeanFactory`。
 
 ### DefaultListableBeanFactory
@@ -114,7 +116,7 @@ if (jpaPresent && !registry.containsBeanDefinition(PERSISTENCE_ANNOTATION_PROCES
 
 ## register()
 
-注册配置类的bean定义到bean工厂中。
+>  注册配置类的bean定义到bean工厂中
 
 ```java
 private <T> void doRegisterBean(Class<T> beanClass, @Nullable String name,
@@ -175,6 +177,8 @@ private <T> void doRegisterBean(Class<T> beanClass, @Nullable String name,
 ![image-20210523004204240](C:\Users\zee\AppData\Roaming\Typora\typora-user-images\image-20210523004204240.png)
 
 ## refresh()
+
+> 初始化IOC容器
 
 上面两步完成之后，在spring的bean工厂中已经注册了内置的一些bean定义和配置类的bean定义，现在开始
 
@@ -266,10 +270,10 @@ public void refresh() throws BeansException, IllegalStateException {
 通过`getBeanFactoryPostProcessors()`获取当前bean工厂中所有的bean工厂后置处理器
 
 1. 先把bean工厂中的所有后置处理器**(容器初始化时一般为空)**循环，如果是bean定义注册机后置处理器则执行其`postProcessBeanDefinitionRegistry`方法，并记录在`registryProcessors`集合中。否则记录在`regularPostProcessors `中。
-2. 通过<span style="color:red">`beanFactory.getBeanNamesForType`从bean工厂的beanDefinitionNames中获取 </span>所有实现了`PriorityOrdered`接口的 bean定义注册机后置处理器 (`BeanDefinitionRegistryPostProcessor`)的bean名称，记录bean名称到processedBeans,然后通过<span style="color:red">`beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class)`获取具体对象</span>，记录对象到currentRegistryProcessors和registryProcessors ，然后执行currentRegistryProcessors内所有对象的后置处理操作(postProcessBeanDefinitionRegistry方法)，清空currentRegistryProcessors。
+2. 通过<span style="color:red">`beanFactory.getBeanNamesForType`从bean工厂的beanDefinitionNames中获取 </span>所有实现了`PriorityOrdered`接口的 bean定义注册机后置处理器 (`BeanDefinitionRegistryPostProcessor`)的bean名称，记录bean名称到processedBeans,然后通过<span style="color:red">`beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class)`获取具体对象</span>，记录对象到currentRegistryProcessors和registryProcessors ，然后执行currentRegistryProcessors内所有对象的后置处理操作(<span style="color:green">**postProcessBeanDefinitionRegistry(...)**</span>)，清空currentRegistryProcessors。
 3. 重复第二步，只是获取到的是实现了Ordered接口的bean定义注册机后置处理器 ，并且要判断不存在于processedBeans(即之前没有执行过)
 4. 重复第2步，获取所有的bean定义注册机后置处理器 ，只要不存在于processedBeans，则执行其后置处理操作,这一步的含义就是执行没有实现PriorityOrdered，Ordered接口的bean定义注册机后置处理器
-5. 执行regularPostProcessors里面所有的bean工厂后置处理器后置处理方法(**postProcessBeanFactory**)。
+5. 执行regularPostProcessors里面所有的bean工厂后置处理器后置处理方法(<span style="color:green">**postProcessBeanFactory(...)**</span>)。
 6. 到这一步，bean工厂中所有的bean定义注册机后置处理器已经全部执行完postProcessBeanDefinitionRegistry 和 postProcessBeanFactory 方法，接下来是只实现了BeanFactoryPostProcessor的bean工厂后置处理器，执行顺序一样，优先实现了PriorityOrdered接口的，然后是实现了Ordered接口的，最后是其他的。
 
 以上是整个调用bean工厂后置处理器的核心代码，可以看到是完全面向接口编程，具体实现一个没看到，这也大大提高了程序的可扩展性，如果需要任何的操作，直接注册实现了BeanFactoryPostProcessor 或者BeanDefinitionRegistryPostProcessor接口bean即可，而不需要了直接移除后置处理器bean即可，完全热插拔。
@@ -284,23 +288,23 @@ public void refresh() throws BeansException, IllegalStateException {
 
 > 主要用来解析配置类，扫描bean定义
 
-- candidates ：保存所有配置类bean定义
-
+- configCandidates：保存所有配置类bean定义
 - alreadyParsed ： 已经解析的ConfigurationClass集合
 
+- candidates : 保存所有配置类bean定义
 
-
-1. 遍历bean工厂中所有的bean定义，获取其中所有被<span style="color:#ffa100">@Configuration</span>注解修饰的类,保存bean定义到configCandidates集合中。
-
-2. 创建ConfigurationClassParser，循环通过**parse** 方法解析第一步获取到的配置类的bean定义：
-   1. 解析配置类上的<span style="color:#ffa100">@PropertySources</span>注解加载属性资源文件
-   2. 使用this.componentScanParser解析配置类上<span style="color:#ffa100">@ComponentScans</span>注解，最后通过ClassPathBeanDefinitionScanner#doScan 把扫描到的符合条件的bean的bean定义封装成ScannedGenericBeanDefinition，注册到bean工厂中。
-   3. 解析<span style="color:#ffa100">@Import</span>注解 ， 
+1. 遍历bean工厂中所有的bean定义，<span style="color:green">**ConfigurationClassUtils.checkConfigurationClassCandidate(...)**</span>方法判断类是否被<span style="color:#ffa100">@Configuration</span>注解修饰,保存配置类bean定义到configCandidates集合中。
+2. 创建ConfigurationClassParser，循环通过<span style="color:green">**parse**(...)</span>方法解析第一步获取到的配置类的bean定义：
+   1. 被<span style="color:#ffa100">@Component</span>修饰的bean，如果内部有<span style="color:#ffa100">@Bean</span> 则也会被当作配置类递归生成进行ConfigurationClass。
+   2. 解析配置类上的<span style="color:#ffa100">@PropertySources</span>注解加载属性资源文件
+   3. 使用this.componentScanParser解析配置类上<span style="color:#ffa100">@ComponentScans</span>注解，最后通过ClassPathBeanDefinitionScanner#doScan 把扫描到的符合条件的bean的bean定义封装成ScannedGenericBeanDefinition，注册到bean工厂中。**然后递归解析新注册的所有配置类bean定义**
+   4. 解析<span style="color:#ffa100">@Import</span>注解 ， 
       1. 若import的类实现了DeferredImportSelector接口，则保存在内部类DeferredImportSelectorHandler中的List集合——deferredImportSelectors中
       2. 若实现了ImportBeanDefinitionRegistrar接口，则把该类缓存在ConfigurationClass对象的Map集合——importBeanDefinitionRegistrars中
-      3. 若两者都未实现，则
-   4. 解析<span style="color:#ffa100">@Bean</span>注解
-   5. 调用ConfigurationClassBeanDefinitionReader 的loadBeanDefinitions 方法，把所有符合条件的bean注册bean定义到bean工厂中。
+      3. 若实现了ImportSelector接口，则把接口实现类返回的bean实例化,则当作配置类，递归解析。
+   5. 解析<span style="color:#ffa100">@ImportResource</span>注解,并保存bean定义在配置类的importedResources属性中。
+   6. 解析<span style="color:#ffa100">@Bean</span>注解,并保存到配置类的beanMethods属性中。
+3. 调用ConfigurationClassBeanDefinitionReader 的loadBeanDefinitions 方法，通过上面解析出来的ConfigurationClass对象来注册所有解析出来的bean定义。
 
 ##### postProcessBeanFactory
 
