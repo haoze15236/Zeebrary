@@ -331,3 +331,40 @@ CommonAnnotationBeanPostProcessor
 
 > 实例化上面加载了的bean定义成具体的bean并缓存起来，同时调用上面注册的bean后置处理器
 
+1. 调用所有实现了InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessBeforeInstantiation(...)</span>方法，其中包含
+
+  - AbstractAutoProxyCreator抽象类(实现了SmartInstantiationAwareBeanPostProcessor接口) : AOP解析切面
+
+2. createBeanInstance：实例化Bean对象，这个时候Bean的对象是非常低级的，基本不能够被我们使用，因为连最基本的属性都没有设置，可以理解为连Autowired注解都是没有解析的；
+
+  - 调用了所有实现了SmartInstantiationAwareBeanPostProcessor接口的<span style="color:green">determineCandidateConstructors(...)</span>方法,其中包含:
+    - AutowiredAnnotationBeanPostProcessor (其父类InstantiationAwareBeanPostProcessorAdapter实现了此接口):  用于指定实例化的构造函数
+
+  - 调用了所有实现了MergedBeanDefinitionPostProcessor接口的<span style="color:green">postProcessMergedBeanDefinition</span>方法,其中包含:
+    - CommonAnnotationBeanPostProcessor（其父类InitDestroyAnnotationBeanPostProcessor实现了此接口）：用于预处理@Resource,@LifeCycle,@Autowried等注解
+
+3. populateBean：填充属性
+
+   - 调用了所有实现InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessAfterInstantiation</span>方法，可以在这里返回false终止bean的赋值操作
+
+   - 调用了所有实现InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessProperties</span>方法,其中包含:
+     - CommonAnnotationBeanPostProcessor : 注入属性@Resource的值
+     - AutowiredAnnotationBeanPostProcessor ：注入属性@Aurowired的值
+
+4. initializeBean：初始化bean,
+
+   - invokeAwareMethods : 调用发现属性接口设置属性，包括有:
+     - 实现了BeanNameAware接口，则调用setBeanName方法；
+     - 实现了BeanClassLoaderAware接口，则调用setBeanClassLoader方法；
+     - 实现了BeanFactoryAware接口，则调用setBeanFactory方法；
+   - 调用BeanPostProcessor的<span style="color:green">postProcessBeforeInitialization</span>方法,其中包括:
+     - ApplicationContextAwareProcessor : 如果实现了Aware系列接口，则全部设置属性值,如:EnvironmentAware	EmbeddedValueResolverAware	ResourceLoaderAware	ApplicationEventPublisherAware	MessageSourceAware	ApplicationContextAware 
+     - ConfigurationClassPostProcessor : 如果实现了ImportAware接口，则注入@Import的值
+   - 如果Bean实现了InitializingBean接口，调用<span style="color:green">afterPropertiesSet</span>方法；
+   - 如果Bean定义了init-method方法，则调用Bean的init-method方法；
+   - 调用BeanPostProcessor的<span style="color:green">postProcessAfterInitialization</span>方法；其中包括
+     - AbstractAutoProxyCreator (实现了SmartInstantiationAwareBeanPostProcessor接口)：创建AOP代理对象
+
+5. 如果应用的上下文被销毁了，如果Bean实现了DisposableBean接口，则调用destroy方法，如果Bean定义了destory-method
+   声明了销毁方法也会被调用。
+
