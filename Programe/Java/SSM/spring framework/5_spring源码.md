@@ -297,15 +297,37 @@ public void refresh() throws BeansException, IllegalStateException {
 2. 创建ConfigurationClassParser，循环通过<span style="color:green">**parse**(...)</span>方法解析第一步获取到的配置类的bean定义：
    1. 被<span style="color:#ffa100">@Component</span>修饰的bean，如果内部有<span style="color:#ffa100">@Bean</span> 则也会被当作配置类递归生成进行ConfigurationClass。
    2. 解析配置类上的<span style="color:#ffa100">@PropertySources</span>注解加载属性资源文件
-   3. 使用this.componentScanParser解析配置类上<span style="color:#ffa100">@ComponentScans</span>注解，最后通过ClassPathBeanDefinitionScanner#doScan 把扫描到的符合条件的bean的bean定义封装成ScannedGenericBeanDefinition，注册到bean工厂中。**然后递归解析新注册的所有配置类bean定义**
+   3. 使用this.componentScanParser解析配置类上<span style="color:#ffa100">@ComponentScans</span>注解，最后通过ClassPathBeanDefinitionScanner#doScan 把扫描到的**符合条件**的bean的bean定义封装成ScannedGenericBeanDefinition，注册到bean工厂中。**然后递归解析新注册的所有配置类bean定义**
    4. 解析<span style="color:#ffa100">@Import</span>注解 ， 
       1. 若import的类实现了DeferredImportSelector接口，则保存在内部类DeferredImportSelectorHandler中的List集合——deferredImportSelectors中
-      2. 若实现了ImportBeanDefinitionRegistrar接口，则把该类缓存在ConfigurationClass对象的Map集合——importBeanDefinitionRegistrars中
-      3. 若实现了ImportSelector接口，则把接口实现类返回的bean实例化,则当作配置类，递归解析。
+      2. 若import的类实现了ImportBeanDefinitionRegistrar接口，则把该类缓存在ConfigurationClass对象的Map集合——importBeanDefinitionRegistrars中
+      3. 若import的类实现了ImportSelector接口，则实例化该类(**会执行Aware接口方法**)，调用其<span style="color:green">selectImports(...)</span>方法,把返回值包装成配置类，递归解析。
+      4. 若都不满足，则把import的类包装成配置类，递归解析。
    5. 解析<span style="color:#ffa100">@ImportResource</span>注解,并保存bean定义在配置类的importedResources属性中。
    6. 解析<span style="color:#ffa100">@Bean</span>注解,并保存到配置类的beanMethods属性中。
-3. 调用ConfigurationClassBeanDefinitionReader 的loadBeanDefinitions 方法，通过上面解析出来的ConfigurationClass对象来注册所有解析出来的bean定义。
+   7. 调用所有实现了DeferredImportSelector接口的类的<span style="color:green">process(...)</span>方法,然后调用<span style="color:green">selectImports()</span>方法返回bean定义,当作配置类递归调用解析@Import注解的过程。
+3. 调用ConfigurationClassBeanDefinitionReader 的loadBeanDefinitions 方法，通过上面解析出来的ConfigurationClass对象来注册所有解析出来的bean定义。同时如果配置类中importBeanDefinitionRegistrars不为空，则还会调用ImportBeanDefinitionRegistrar实现类的<span style="color:green">registerBeanDefinitions(...)</span>方法。
 
 ##### postProcessBeanFactory
 
-> 主要
+> 主要是对使用了@Configuration注解的类进行cglib动态代理增强
+
+增强方法为org.springframework.context.annotation.ConfigurationClassEnhancer.BeanMethodInterceptor#intercept，是的在配置类中通过方法调用获取bean的时候，先从ioc容器中通过&beanName获取
+
+### registerBeanPostProcessors(beanFactory)
+
+> 注册bean后置处理器
+
+获取bean工厂中所有实现了**BeanPostProcessor**接口的bean，跟上面的bean工厂后置处理器一样，按照实现了PriorityOrdered接口，Ordered接口，和其他的顺序，排序添加到bean工厂的`List<BeanPostProcessor> beanPostProcessors` 属性中。
+
+默认内置的bean包括:
+
+```java
+AutowiredAnnotationBeanPostProcessor
+CommonAnnotationBeanPostProcessor
+```
+
+### finishBeanFactoryInitialization(beanFactory)
+
+> 实例化上面加载了的bean定义成具体的bean并缓存起来，同时调用上面注册的bean后置处理器
+
