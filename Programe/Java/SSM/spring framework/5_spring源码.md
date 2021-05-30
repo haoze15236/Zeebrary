@@ -333,25 +333,39 @@ CommonAnnotationBeanPostProcessor
 
 1. 调用所有实现了InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessBeforeInstantiation(...)</span>方法，其中包含
 
-  - AbstractAutoProxyCreator抽象类(实现了SmartInstantiationAwareBeanPostProcessor接口) : AOP解析切面
+   - AbstractAutoProxyCreator抽象类(实现了SmartInstantiationAwareBeanPostProcessor接口) : AOP解析切面
 
-2. createBeanInstance：实例化Bean对象，这个时候Bean的对象是非常低级的，基本不能够被我们使用，因为连最基本的属性都没有设置，可以理解为连Autowired注解都是没有解析的；
+2. createBeanInstance：实例化Bean对象，此时对象并没有注入属性值，把此时的对象通过<span style="color:green">addSingletonFactory</span>方法添加到三级缓存中
 
-  - 调用了所有实现了SmartInstantiationAwareBeanPostProcessor接口的<span style="color:green">determineCandidateConstructors(...)</span>方法,其中包含:
-    - AutowiredAnnotationBeanPostProcessor (其父类InstantiationAwareBeanPostProcessorAdapter实现了此接口):  用于指定实例化的构造函数
+   - 调用了所有实现了SmartInstantiationAwareBeanPostProcessor接口的<span style="color:green">determineCandidateConstructors(...)</span>方法,其中包含:
+     - AutowiredAnnotationBeanPostProcessor (其父类InstantiationAwareBeanPostProcessorAdapter实现了此接口):  用于指定实例化的构造函数
 
-  - 调用了所有实现了MergedBeanDefinitionPostProcessor接口的<span style="color:green">postProcessMergedBeanDefinition</span>方法,其中包含:
-    - CommonAnnotationBeanPostProcessor（其父类InitDestroyAnnotationBeanPostProcessor实现了此接口）：用于预处理@Resource,@LifeCycle,@Autowried等注解
+   - 调用了所有实现了MergedBeanDefinitionPostProcessor接口的<span style="color:green">postProcessMergedBeanDefinition</span>方法,其中包含:
+     - CommonAnnotationBeanPostProcessor（其父类InitDestroyAnnotationBeanPostProcessor实现了此接口）：用于预处理@Resource,@LifeCycle,@Autowried等注解
 
-3. populateBean：填充属性
+3. 添加对象进三级缓存,对象属性还没有注入
+
+   ```java
+   protected void addSingletonFactory(String beanName, ObjectFactory<?> singletonFactory) {
+   		Assert.notNull(singletonFactory, "Singleton factory must not be null");
+   		synchronized (this.singletonObjects) {
+   			if (!this.singletonObjects.containsKey(beanName)) {
+   				this.singletonFactories.put(beanName, singletonFactory); //把bean引用保存在三级缓存中
+   				this.earlySingletonObjects.remove(beanName);	//从二级缓存移除bean
+   				this.registeredSingletons.add(beanName);	//记录bean为已注册
+   			}
+   		}
+   	}
+   ```
+
+4. populateBean：填充属性
 
    - 调用了所有实现InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessAfterInstantiation</span>方法，可以在这里返回false终止bean的赋值操作
-
    - 调用了所有实现InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessProperties</span>方法,其中包含:
      - CommonAnnotationBeanPostProcessor : 注入属性@Resource的值
-     - AutowiredAnnotationBeanPostProcessor ：注入属性@Aurowired的值
+     - AutowiredAnnotationBeanPostProcessor ：注入属性@Aurowired的值，在injet方法中,有判断通过类型去匹配，此时会递归调用,去获取依赖项的bean实例
 
-4. initializeBean：初始化bean,
+5. initializeBean：初始化bean,
 
    - invokeAwareMethods : 调用发现属性接口设置属性，包括有:
      - 实现了BeanNameAware接口，则调用setBeanName方法；
@@ -365,6 +379,68 @@ CommonAnnotationBeanPostProcessor
    - 调用BeanPostProcessor的<span style="color:green">postProcessAfterInitialization</span>方法；其中包括
      - AbstractAutoProxyCreator (实现了SmartInstantiationAwareBeanPostProcessor接口)：创建AOP代理对象
 
-5. 如果应用的上下文被销毁了，如果Bean实现了DisposableBean接口，则调用destroy方法，如果Bean定义了destory-method
+6. 如果应用的上下文被销毁了，如果Bean实现了DisposableBean接口，则调用destroy方法，如果Bean定义了destory-method
    声明了销毁方法也会被调用。
+
+7. bean创建完成，添加到一级缓存中，从二级缓存，3级缓存移除。
+
+# 循环依赖问题
+
+查看从缓存中获取bean的代码如下: 
+
+```java
+@Nullable
+	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+		Object singletonObject = this.singletonObjects.get(beanName);//从一级缓存拿
+		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {//判断bean是否正在创建,在最开始就记录了这个
+			synchronized (this.singletonObjects) {
+				singletonObject = this.earlySingletonObjects.get(beanName); 		//从二级缓存拿
+				if (singletonObject == null && allowEarlyReference) {
+					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName); //从三级缓存拿引用
+					if (singletonFactory != null) {
+						singletonObject = singletonFactory.getObject();
+						this.earlySingletonObjects.put(beanName, singletonObject);  		//放入二级缓存
+						this.singletonFactories.remove(beanName);			//从三级缓存移除
+					}
+				}
+			}
+		}
+		return singletonObject;
+	}
+```
+
+A 依赖 B , B 依赖 A :
+
+1. 先创建A，A进入三级缓存, 开始注入属性，开始创建B
+2. B进入三级缓存，开始注入属性，开始创建 A
+3. A进入上面的getSingleton代码，从三级缓存中获取到之前创建的实例引用,是没有注入属性的A对象，把A从三级缓存移除，放入二级缓存
+4. B注入A属性成功,创建bean成功，从三级缓存移除,添加进一级缓存 
+5. A注入B成功，从二级缓存移除,添加进一级缓存。
+
+# AOP代理创建时机
+
+那重点关注下singletonFactories(三级缓存)中存的是什么？在`org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory`下
+
+```java
+addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
+```
+
+看下这个函数式接口方法：
+
+```java
+protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
+		Object exposedObject = bean;
+		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
+			for (BeanPostProcessor bp : getBeanPostProcessors()) {
+				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
+					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
+					exposedObject = ibp.getEarlyBeanReference(exposedObject, beanName);
+				}
+			}
+		}
+		return exposedObject;
+	}
+```
+
+调用了所有SmartInstantiationAwareBeanPostProcessor的实现类的<span style="color:green">getEarlyBeanReference</span>方法。
 
