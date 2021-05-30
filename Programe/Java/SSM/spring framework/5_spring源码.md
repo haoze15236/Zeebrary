@@ -257,7 +257,7 @@ public void refresh() throws BeansException, IllegalStateException {
 
 ### invokeBeanFactoryPostProcessors
 
-> ioc容器初始化时通过整个方法来调用bean工厂后置处理器及其子接口的相关后置处理器
+> ioc容器初始化时通过整个方法来调用bean工厂后置处理器及其子接口的相关后置处理器 **<span style="color:red">扩展点</span>**
 
 - processedBeans:记录操作过的bean的name
 
@@ -282,7 +282,7 @@ public void refresh() throws BeansException, IllegalStateException {
 
 #### ConfigurationClassPostProcessor
 
-在上面调用各种后置处理器的时候，就会触发创世纪类`ConfigurationClassPostProcessor`  的bean定义注册机后置处理器方法和bean工厂后置处理器方法
+在上面第2步的时候，就会触发创世纪类`ConfigurationClassPostProcessor`  的bean定义注册机后置处理器方法和bean工厂后置处理器方法
 
 ##### postProcessBeanDefinitionRegistry
 
@@ -305,8 +305,8 @@ public void refresh() throws BeansException, IllegalStateException {
       4. 若都不满足，则把import的类包装成配置类，递归解析。
    5. 解析<span style="color:#ffa100">@ImportResource</span>注解,并保存bean定义在配置类的importedResources属性中。
    6. 解析<span style="color:#ffa100">@Bean</span>注解,并保存到配置类的beanMethods属性中。
-   7. 调用所有实现了DeferredImportSelector接口的类的<span style="color:green">process(...)</span>方法,然后调用<span style="color:green">selectImports()</span>方法返回bean定义,当作配置类递归调用解析@Import注解的过程。
-3. 调用ConfigurationClassBeanDefinitionReader 的loadBeanDefinitions 方法，通过上面解析出来的ConfigurationClass对象来注册所有解析出来的bean定义。同时如果配置类中importBeanDefinitionRegistrars不为空，则还会调用ImportBeanDefinitionRegistrar实现类的<span style="color:green">registerBeanDefinitions(...)</span>方法。
+   7. 调用所有实现了DeferredImportSelector接口的类的<span style="color:green">process(...)</span>方法,然后调用<span style="color:green">selectImports()</span>方法返回bean定义,当作配置类递归调用解析@Import注解的过程。**声明式事务使用注解<span style="color:#ffa100">@EnableTransactionManagement</span>会import一个类TransactionManagementConfigurationSelector在这里被注册进bean定义** **<span style="color:red">扩展点</span>**
+3. 调用ConfigurationClassBeanDefinitionReader 的loadBeanDefinitions 方法，通过上面解析出来的ConfigurationClass对象来注册所有解析出来的bean定义。同时如果该配置类中importBeanDefinitionRegistrars不为空，则还会调用ImportBeanDefinitionRegistrar实现类的<span style="color:green">registerBeanDefinitions(...)</span>方法。**AOP使用注解<span style="color:#ffa100">@EnableAspectJAutoProxy</span>会import一个类在这里被注册bean定义** **<span style="color:red">扩展点</span>**
 
 ##### postProcessBeanFactory
 
@@ -329,13 +329,53 @@ CommonAnnotationBeanPostProcessor
 
 ### finishBeanFactoryInitialization(beanFactory)
 
-> 实例化上面加载了的bean定义成具体的bean并缓存起来，同时调用上面注册的bean后置处理器
+> 实例化上面加载了的bean定义成具体的bean并缓存起来，同时调用注册的bean后置处理器
 
-1. 调用所有实现了InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessBeforeInstantiation(...)</span>方法，其中包含
+在这个方法中，首先会通过`beanFactory.freezeConfiguration();`当前bean工厂中的所有bean定义冻结。
 
-   - AbstractAutoProxyCreator抽象类(实现了SmartInstantiationAwareBeanPostProcessor接口) : AOP解析切面
+org.springframework.beans.factory.support.DefaultListableBeanFactory#preInstantiateSingletons：**实例化bean的真正入口**在这个方法中有两个for循环所有bean定义，第一个循环统一bean定义为RootBeanDefinition之后判断判断是否为factoryBean
 
-2. createBeanInstance：实例化Bean对象，此时对象并没有注入属性值，把此时的对象通过<span style="color:green">addSingletonFactory</span>方法添加到三级缓存中
+- 是：通过&+beanName去getBean()
+
+- 不是:直接用beanName去getBean()
+
+第二个循环判断上面getBean()获取到的对象若实现了 SmartInitializingSingleton 接口则执行其afterSingletonsInstantiated方法。**<span style="color:red">扩展点</span>**
+
+#### AbstractBeanFactory#doGetBean
+
+> 上面getBean直接就是调用的这里获取bean对象，首先获取bean实例，然后调用getObjectForBeanInstance获取bean对象。
+
+**获取bean实例过程**
+
+1. 从缓存中获取bean对象，获取到了去获取bean对象，前面内置类的bean实际已经创建过所以都可以从缓存中获取到，此处一般是从自定义的配置类开始才走下面的步骤
+2. 解析<span style="color:#ffa100">@dependOn</span>注解,如果有的话递归调用此方法先去实例化依赖的bean,没有则继续往下getSingleton();
+
+##### DefaultSingletonBeanRegistry#getSingleton
+
+> 这个方法主要是解决循环依赖的
+
+1. 先把当前要创建的bean添加到bean工厂的singletonsCurrentlyInCreation Set集合中，含义是标记为正在创建。
+2. 调用函数接口方法getObject()去实例化bean
+3. 实例化完毕之后从Set集合中移除，
+4. 如果是新创建的bean，调用**addSingleton**方法添加到bean工厂的缓存中。
+
+###### AbstractAutowireCapableBeanFactory#createBean
+
+> 这个方法是上面函数接口方法getObject()的具体实现
+
+1. 调用bean工厂中所有实现了InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessBeforeInstantiation(...)</span>方法，其中包含
+
+- AbstractAutoProxyCreator抽象类(实现了SmartInstantiationAwareBeanPostProcessor接口) : AOP解析切面
+
+**<span style="color:red">扩展点 : 这里也可以自定义实现这个接口，来返回bean实例，如果这样做的话，此处还会调用所有bean后置处理器的postProcessAfterInitialization方法，然后结束此bean的创建</span>**
+
+2. 若上面接口没有返回bean实例，则调用真正做事的方法。
+
+###### AbstractAutowireCapableBeanFactory#doCreateBean
+
+> 真正做事的方法，开始创建bean
+
+1. createBeanInstance：实例化Bean对象，此时对象并没有注入属性值
 
    - 调用了所有实现了SmartInstantiationAwareBeanPostProcessor接口的<span style="color:green">determineCandidateConstructors(...)</span>方法,其中包含:
      - AutowiredAnnotationBeanPostProcessor (其父类InstantiationAwareBeanPostProcessorAdapter实现了此接口):  用于指定实例化的构造函数
@@ -343,7 +383,7 @@ CommonAnnotationBeanPostProcessor
    - 调用了所有实现了MergedBeanDefinitionPostProcessor接口的<span style="color:green">postProcessMergedBeanDefinition</span>方法,其中包含:
      - CommonAnnotationBeanPostProcessor（其父类InitDestroyAnnotationBeanPostProcessor实现了此接口）：用于预处理@Resource,@LifeCycle,@Autowried等注解
 
-3. 添加对象进三级缓存,对象属性还没有注入
+2. 把上面创建的对象通过<span style="color:green">addSingletonFactory</span>方法添加到三级缓存中
 
    ```java
    protected void addSingletonFactory(String beanName, ObjectFactory<?> singletonFactory) {
@@ -358,14 +398,14 @@ CommonAnnotationBeanPostProcessor
    	}
    ```
 
-4. populateBean：填充属性
+3. populateBean：填充属性
 
    - 调用了所有实现InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessAfterInstantiation</span>方法，可以在这里返回false终止bean的赋值操作
    - 调用了所有实现InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessProperties</span>方法,其中包含:
      - CommonAnnotationBeanPostProcessor : 注入属性@Resource的值
      - AutowiredAnnotationBeanPostProcessor ：注入属性@Aurowired的值，在injet方法中,有判断通过类型去匹配，此时会递归调用,去获取依赖项的bean实例
 
-5. initializeBean：初始化bean,
+4. initializeBean：初始化bean,
 
    - invokeAwareMethods : 调用发现属性接口设置属性，包括有:
      - 实现了BeanNameAware接口，则调用setBeanName方法；
@@ -379,10 +419,10 @@ CommonAnnotationBeanPostProcessor
    - 调用BeanPostProcessor的<span style="color:green">postProcessAfterInitialization</span>方法；其中包括
      - AbstractAutoProxyCreator (实现了SmartInstantiationAwareBeanPostProcessor接口)：创建AOP代理对象
 
-6. 如果应用的上下文被销毁了，如果Bean实现了DisposableBean接口，则调用destroy方法，如果Bean定义了destory-method
+5. 如果应用的上下文被销毁了，如果Bean实现了DisposableBean接口，则调用destroy方法，如果Bean定义了destory-method
    声明了销毁方法也会被调用。
 
-7. bean创建完成，添加到一级缓存中，从二级缓存，3级缓存移除。
+6. bean创建完成，添加到一级缓存中，从二级缓存，3级缓存移除。
 
 # 循环依赖问题
 
@@ -417,7 +457,7 @@ A 依赖 B , B 依赖 A :
 4. B注入A属性成功,创建bean成功，从三级缓存移除,添加进一级缓存 
 5. A注入B成功，从二级缓存移除,添加进一级缓存。
 
-# AOP代理创建时机
+# AOP代理
 
 那重点关注下singletonFactories(三级缓存)中存的是什么？在`org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory`下
 
