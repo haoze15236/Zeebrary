@@ -1,53 +1,120 @@
-spring boot 
-	rest 风格接口
+# rest 风格接口
 
-​	增删改查	
+```java
+//查询
+@GetMapping("/{id}")
+//新增
+@PostMapping("/add")
+//修改
+@PutMapping("/{id}")
+//删除
+@DeleteMapping("/{id}")
+```
 
-# [RestTemplate](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.resttemplate)
+## [RestTemplate](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.resttemplate)
 
-​	增删改查
+```java
+// url: 请求的远程rest url
+// object : post请求的参数
+// Class<T>:返回的类型
+// ...Object: 是@PathVariable 占位符的参数
+ResponseEntity<Result> resultResponseEntity = restTemplate.postForEntity("http://localhost:8080/user/add", user, Result.class);
+resultResponseEntity.getBody().toString();
+//put请求调用修改
+ResponseEntity<Result> resultResponseEntity = restTemplate.exchange("http://localhost:8080/user/{id}", HttpMethod.PUT, httpEntity, Result.class, 1);
+//delete请求调用删除
+ResponseEntity<Result> resultResponseEntity = restTemplate.exchange("http://localhost:8080/user/{id}", HttpMethod.DELETE, null, Result.class, 1);
+```
 
 # [Mock MVC](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.testing.spring-boot-applications.with-mock-environment)
 
+> MockMvc是由spring-test包提供，实现了对Http请求的模拟，能够直接使用网络的形式，转换到Controller的调用，使得测试速度
+> 快、不依赖网络环境。同时提供了一套验证的工具，结果的验证十分方便。
+
+```java
+@SpringBootTest
+@AutoConfigureMockMvc
+class DemoApplicationTests {
+	@Test
+	void exampleTest(@Autowired MockMvc mvc) throws Exception {
+		String webClient = "{\n" +
+				"  \"id\": 1,\n" +
+				"  \"url\": \"www.baidu.com\",\n" +
+				"  \"host\": \"8080\"\n" +
+				"}";
+		mvc.perform(MockMvcRequestBuilders.post("/postUser")
+		.accept(MediaType.APPLICATION_JSON_UTF8)
+		.contentType(MediaType.APPLICATION_JSON_UTF8)
+		.content(webClient))
+		.andExpect(MockMvcResultMatchers.status().isOk())
+		.andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1))
+		.andDo(MockMvcResultHandlers.print());
+	}
+
+}
+```
+
+通过构建MockMvcRequestBuilders来设置请求的参数,包括
+
+- 接受类型accept
+- 请求内容类型contentType
+- 请求内容content
+- 返回结果断言**andExpect**
+  - MockMvcResultMatchers.status().isOk() ：代表返回状态是200
+  - MockMvcResultMatchers.jsonPath("$.id").value(1) ：代表返回的json中存在id属性，且值为1
+
+- 断言通过之后执行操作**andDo**
+  - MockMvcResultHandlers.print() : 打印请求内容
+
 # swagger
 
-**,swagger2 注解整体说明**
+> 根据后端申明的注解，自动生成接口说明文档，让后端开发人员，从繁重的接口说明文档中解脱出来
 
-用于 **controller** 类上:
+- 添加依赖
+
+```xml
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger2</artifactId>
+    <version>2.9.2</version>
+</dependency>
+<dependency>
+    <groupId>io.springfox</groupId>
+    <artifactId>springfox-swagger-ui</artifactId>
+    <version>2.9.2</version>
+</dependency>
+```
+
+- 添加swagger配置类
+
+```java
+@EnableSwagger2
+@Configuration
+public class SwaggerConfig {
+	@Bean
+	public Docket createRestApi() {
+		return new Docket(DocumentationType.SWAGGER_2) //定义生成swagger2规范的文档
+				.pathMapping("/") //设置哪些接口会映射到swagger中
+				.select() //接口选择器
+				.apis(RequestHandlerSelectors.basePackage("com.example.demo")) //api扫描包
+				.paths(PathSelectors.any())//路径过滤
+				.build()
+				//swagger文档信息描述
+				.apiInfo(new ApiInfoBuilder()
+				.title("测试swagger") //标题
+				.description("springboot整合swagger")  //描述
+				.version("1.0") //版本
+				.contact(new Contact("郝泽","","136910472@qq.com")) //联系人
+				.build());
+	}
+}
+```
+
+## **controller** 
 
 | 注解 | 说明           |
 | ---- | -------------- |
 | @Api | 对请求类的说明 |
-
-用于**方法**上面 (说明**参数**的含义):
-
-| 注解                                  | 说明                                                        |
-| ------------------------------------- | ----------------------------------------------------------- |
-| @ApiOperation                         | 方法的说明                                                  |
-| @ApiImplicitParams、@ApiImplicitParam | 方法的参数的说明；@ApiImplicitParams 用于指定单个参数的说明 |
-
-用于**方法**上面 (**返回参数**或对象的说明):
-
-| 注解                        | 说明                                                    |
-| --------------------------- | ------------------------------------------------------- |
-| @ApiResponses、@ApiResponse | 方法返回值的说明 ；@ApiResponses 用于指定单个参数的说明 |
-
-**对象类**:
-
-| 注解              | 说明                                           |
-| ----------------- | ---------------------------------------------- |
-| @ApiModel         | 用在 JavaBean 类上，说明 JavaBean 的 用途      |
-| @ApiModelProperty | 用在 JavaBean 类的属性上面，说明此属性的的含议 |
-
-2,@API: 请求类的说明
-
-@API: 放在 请求的类上, 与 @Controller 并列, 说明类的作用, 如用户模块, 订单类等.
-
-​                tags="说明该类的作用"    value="该参数没什么意义, 所以不需要配置"              
-
-示例:
-
-​                @API(tags="订单模块") @Controller public class OrderController {  }              
 
 @API 其它属性配置:
 
@@ -68,68 +135,56 @@ spring boot
 | authorizations | 高级特性认证时配置                  |
 | hidden         | 配置为 true ，将在文档中隐藏        |
 
-3,@ApiOperation: 方法的说明
+## **方法**
 
-​                @ApiOperation:"用在请求的方法上, 说明方法的作用"    value="说明方法的作用"    notes="方法的备注说明"              
+| 注解                                  | 说明                                                        |
+| ------------------------------------- | ----------------------------------------------------------- |
+| @ApiOperation                         | 方法的说明                                                  |
+| @ApiImplicitParams、@ApiImplicitParam | 方法的入参的说明；@ApiImplicitParams 用于指定单个参数的说明 |
+| @ApiResponses、@ApiResponse           | 方法返回值的说明 ；@ApiResponses 用于指定单个参数的说明     |
 
-3.1,@ApiImplicitParams,@ApiImplicitParam: 方法参数的说明
+- @ApiOperation
 
-@ApiImplicitParams: 用在请求的方法上, 包含一组参数说明
+  value="说明方法的作用"    
 
-@ApiImplicitParam: 对单个参数的说明
+  notes="方法的备注说明"    
 
-name: 参数名
+- @ApiImplicitParam
 
-value: 参数的汉字说明, 解释
+  name: 参数名
 
-required: 参数是否必须传
+  value: 参数的汉字说明, 解释
 
-paramType: 参数放在哪个地方
+  required: 参数是否必须传
 
-. header --> 请求参数的获取:@RequestHeader
+  paramType: 参数放在哪个地方
 
-. query --> 请求参数的获取:@RequestParam
+  . header --> 请求参数的获取:@RequestHeader
 
-. path(用于 restful 接口)--> 请求参数的获取:@PathVariable
+  . query --> 请求参数的获取:@RequestParam
 
-​                . body(请求体)-->  @RequestBody User user            . form(普通表单提交)              
+  . path(用于 restful 接口)--> 请求参数的获取:@PathVariable
 
-dataType: 参数类型, 默认 String, 其它值 dataType="Integer"
+  . body(请求体)-->  @RequestBody User user            . form(普通表单提交)              
 
-defaultValue: 参数的默认值
+  dataType: 参数类型, 默认 String, 其它值 dataType="Integer"
 
-示列:
+  defaultValue: 参数的默认值
 
-​                @API(tags="用户模块") @Controller public class UserController {    @ApiOperation(value="用户登录",notes="随边说点啥")    @ApiImplicitParams({        @ApiImplicitParam(name="mobile",value="手机号",required=true,paramType="form"),        @ApiImplicitParam(name="password",value="密码",required=true,paramType="form"),        @ApiImplicitParam(name="age",value="年龄",required=true,paramType="form",dataType="Integer")    })    @PostMapping("/login")    public JsonResult login(@RequestParam String mobile, @RequestParam String password,    @RequestParam Integer age){        //...        return JsonResult.ok(map);    } }              
+- @ApiResponse
 
-4,@ApiResponses,@ApiResponse: 方法返回值的说明
+  code: 数字, 例如 400
 
-@ApiResponses: 方法返回对象的说明
+  message: 信息, 例如 "请求参数没填好"
 
-@ApiResponse: 每个参数的说明
+  response: 抛出异常的类
 
-code: 数字, 例如 400
+## **对象**
 
-message: 信息, 例如 "请求参数没填好"
-
-response: 抛出异常的类
-
-示例:
-
-​                @API(tags="用户模块") @Controller public class UserController {    @ApiOperation("获取用户信息")    @ApiImplicitParams({        @ApiImplicitParam(paramType="query", name="userId", dataType="String", required=true, value="用户 Id")    })    @ApiResponses({        @ApiResponse(code = 400, message = "请求参数没填好"),        @ApiResponse(code = 404, message = "请求路径没有或页面跳转路径不对")    })    @ResponseBody    @RequestMapping("/list")    public JsonResult list(@RequestParam String userId) {        ...        return JsonResult.ok().put("page", pageUtil);    } }              
-
-5,@ApiModel: 用于 JavaBean 上面, 表示一个 JavaBean(如: 响应数据) 的信息
-
-@ApiModel: 用于 JavaBean 的类上面, 表示此 JavaBean 整体的信息
-
-(这种一般用在 post 创建的时候, 使用 @RequestBody 这样的场景,
-
-请求参数无法使用 @ApiImplicitParam 注解进行描述的时候 )
-
-5.1,@ApiModelProperty: 用在 JavaBean 类的属性上面, 说明属性的含义
-
-​                示例: @ApiModel(description= "返回响应数据") public class RestMessage implements Serializable{    @ApiModelProperty(value = "是否成功")    private boolean success=true;    @ApiModelProperty(value = "返回对象")    private Object data;    @ApiModelProperty(value = "错误编号")    private Integer errCode;    @ApiModelProperty(value = "错误信息")    private String message;    /* getter/setter 略 */ }              
-
-## AOP根据swagger添加日志
+| 注解              | 说明                                           |
+| ----------------- | ---------------------------------------------- |
+| @ApiModel         | 用在 JavaBean 类上，说明 JavaBean 的 用途      |
+| @ApiModelProperty | 用在 JavaBean 类的属性上面，说明此属性的的含议 |
 
 # spring mvc自动配置原理
+
