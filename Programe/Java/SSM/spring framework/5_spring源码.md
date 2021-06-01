@@ -365,7 +365,7 @@ org.springframework.beans.factory.support.DefaultListableBeanFactory#preInstanti
 
 1. 调用bean工厂中所有实现了InstantiationAwareBeanPostProcessor接口的<span style="color:green">postProcessBeforeInstantiation(...)</span>方法，其中包含
 
-- AbstractAutoProxyCreator抽象类(实现了SmartInstantiationAwareBeanPostProcessor接口) : AOP解析切面
+- AbstractAutoProxyCreator抽象类(实现了SmartInstantiationAwareBeanPostProcessor接口) : AOP解析切面生成通知类
 
 **<span style="color:red">扩展点 : 这里也可以自定义实现这个接口，来返回bean实例，如果这样做的话，此处还会调用所有bean后置处理器的postProcessAfterInitialization方法，然后结束此bean的创建</span>**
 
