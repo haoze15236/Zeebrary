@@ -457,30 +457,3 @@ A 依赖 B , B 依赖 A :
 4. B注入A属性成功,创建bean成功，从三级缓存移除,添加进一级缓存 
 5. A注入B成功，从二级缓存移除,添加进一级缓存。
 
-# AOP代理
-
-那重点关注下singletonFactories(三级缓存)中存的是什么？在`org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory`下
-
-```java
-addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
-```
-
-看下这个函数式接口方法：
-
-```java
-protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
-		Object exposedObject = bean;
-		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
-			for (BeanPostProcessor bp : getBeanPostProcessors()) {
-				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
-					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
-					exposedObject = ibp.getEarlyBeanReference(exposedObject, beanName);
-				}
-			}
-		}
-		return exposedObject;
-	}
-```
-
-调用了所有SmartInstantiationAwareBeanPostProcessor的实现类的<span style="color:green">getEarlyBeanReference</span>方法。
-
