@@ -87,6 +87,10 @@ public class PaymentHandleIniplusRequestDTO {
 
 类注解。在序列化为JSON的时候，@JsonIgnoreProperties({“prop1”, “prop2”})会忽略pro1和pro2两个属性。在从JSON反序列化为Java类的时候，@JsonIgnoreProperties(ignoreUnknown=true)会忽略所有没有Getter和Setter的属性。该注解在Java类和JSON不完全匹配的时候很有用。
 
+# @JsonInclude
+
+
+
 # Xml转bean对象
 
 ```java

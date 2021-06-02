@@ -70,9 +70,9 @@ mapper.setDefaultPropertyInclusion(Include.NON_DEFAULT);
 
 更多配置信息可以查看 Jackson 的 DeserializationFeature，SerializationFeature 和 I nclude。
 
- 
-
 ### Jackson 的 注解的使用
+
+> [jackson annotations注解详解](https://blog.csdn.net/sdyy321/article/details/40298081)
 
 Jackson 根据它的默认方式序列化和反序列化 java 对象，若根据实际需要，灵活的调整它的默认方式，可以使用 Jackson 的注解。常用的注解及用法如下。
 
