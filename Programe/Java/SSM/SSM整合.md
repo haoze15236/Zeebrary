@@ -140,7 +140,9 @@
 </project>
 ```
 
-# web.xml
+# 基于XML整合
+
+## web.xml
 
 - 定义DispatcherServlet,同时指定spring MVC的xml配置文件
 - 设置请求编码
@@ -207,7 +209,7 @@
 </web-app>
 ```
 
-# spring-mvc.xml
+## spring-mvc.xml
 
 只扫描controller，配置请求映射，视图解析器,文件上传
 
@@ -276,7 +278,7 @@
 </beans>
 ```
 
-# spring-core.xml
+## spring-core.xml
 
 加载除了controller之外所有需要注入到spring容器中的bean,配置数据源,事务管理器,AOP。
 
@@ -335,3 +337,64 @@
 </beans>
 ```
 
+# 整合mybatis源码解析
+
+## SqlSessionFactoryBean
+
+> 创建sqlSession工厂，解析mybatis配置类。
+
+从spring-core.xml中可以看到，定义了一个SqlSessionFactoryBean，这是用来解析myabtis配置文件的类,实现了InitializingBean接口，在bean初始化之后，回调<span style="color:green">afterPropertiesSet()</span>方法。
+
+```java
+@Override
+  public void afterPropertiesSet() throws Exception {
+    //.....
+    //创建sqlSessionFactory
+    this.sqlSessionFactory = buildSqlSessionFactory();
+  }
+```
+
+过程和mybatis手动创建工厂大同小异，需要注意的是：
+
+- **创建事务工厂**
+
+```java
+targetConfiguration.setEnvironment(new Environment(this.environment,
+        this.transactionFactory == null ? new SpringManagedTransactionFactory() : this.transactionFactory,
+        this.dataSource));
+```
+
+可以看到这里使用了**SpringManagedTransactionFactory** 的实例,这个工厂创建的是**SpringManagedTransaction** 事务，也就是spring的声明式事务。
+
+## MapperScannerConfigurer
+
+> 为mapper接口在Spring容器中创建Bean实例
+
+实现了BeanDefinitionRegistryPostProcessor接口,在spring IOC容器初始化的时候，调用所有的bean定义的BeanFactoryPostProcessor里面会回调这个方法。
+
+- **ClassPathMapperScanner**
+
+  > 扫描mapper接口，并注册bean定义到bean工厂中。
+
+  创建了此对象，用于扫描所有的mapper接口。scan方法调用的是父类ClassPathBeanDefinitionScanner的，然后又重写了父类的doScan方法。最重要的是重写了父类的isCandidateComponent方法，由于spring默认是通过这个方法判断类如果是接口则跳过注册bean定义，所有重写之后，可以进入候选的注册bean定义集合——`Set<BeanDefinitionHolder> beanDefinitions`。
+
+  在 **<span style="color:green">processBeanDefinitions</span>**方法中修改了原接口的bean定义:
+
+  ```java
+  definition.setBeanClass(this.mapperFactoryBeanClass);
+  ```
+
+- **MapperFactoryBean**
+
+  > mapper接口真正实例化的类，使用jdk动态代理
+
+继承了FactoryBean接口，在实例化bean的时候回调getObject()方法
+
+```java
+  @Override
+  public T getObject() throws Exception {
+    return getSqlSession().getMapper(this.mapperInterface);
+  }
+```
+
+实际上是从mybatis的configutation对象中的MapperRegistry中获取到了mapper的代理对象。
