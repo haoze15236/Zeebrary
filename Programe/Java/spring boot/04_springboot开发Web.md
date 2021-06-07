@@ -186,5 +186,12 @@ public class SwaggerConfig {
 | @ApiModel         | 用在 JavaBean 类上，说明 JavaBean 的 用途      |
 | @ApiModelProperty | 用在 JavaBean 类的属性上面，说明此属性的的含议 |
 
-# spring mvc自动配置原理
+# [spring mvc自动配置原理](https://docs.spring.io/spring-boot/docs/current/reference/html/features.html#features.developing-web-applications.spring-mvc.auto-configuration)
 
+springMVC自动配置是在场景启动器里面自动导入MVC的配置类**WebMvcAutoConfiguration**
+
+# 自定义springMVC配置
+
+通过实现WebMvcConfigurer接口来自定义springMvc的行为，官方说明如下:
+
+> If you want to keep those Spring Boot MVC customizations and make more [MVC customizations](https://docs.spring.io/spring-framework/docs/5.3.7/reference/html/web.html#mvc) (interceptors, formatters, view controllers, and other features), you can add your own `@Configuration` class of type `WebMvcConfigurer` but **without** `@EnableWebMvc`.
