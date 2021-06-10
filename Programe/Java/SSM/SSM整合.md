@@ -452,7 +452,7 @@ protected void initStrategies(ApplicationContext context) {
 }
 ```
 
-默认内置对象如下维护在spring-webmvc的jar包属性资源文件DispatcherServlet.properties中。
+默认内置对象如下维护在spring-webmvc的jar包属性资源文件DispatcherServlet.properties中,各个组件详细使用可参考 [10_springMVC核心组件源码分析](./spring MVC/10_springMVC核心组件源码分析)
 
 # 整合mybatis源码解析
 
