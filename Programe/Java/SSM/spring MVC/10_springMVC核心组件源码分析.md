@@ -113,3 +113,12 @@ BeanNameUrlHandlerMapping
 - DefaultHandlerExceptionResolver
 - ExceptionHandlerExceptionResolver
 
+
+
+
+
+[spring MVC中返回json源码](https://www.jianshu.com/p/66dd08df166e)
+
+![image-20210616210344365](C:/Users/zee/AppData/Roaming/Typora/typora-user-images/image-20210616210344365.png)
+
+找到MappingJackson2HttpMessageConverter来zh

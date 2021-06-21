@@ -49,10 +49,11 @@ public abstract class BaseBuilder {
 
 # MappedStatement
 
-> mapper文件解析出来的对象，包含了sql,参数，返回值类型等等
+> mapper文件解析出来的对象，包含了sql,参数，返回值类型等等,
 
 - **SqlSource** ：获取sql的接口
 
-  其实现类一般都包含属性SqlNode，在实际调用过程中，是使用装饰器模式层层解析节点，最后拼接出来要执行的sql
+  其实现类一般都包含属性SqlNode，在实际调用过程中，是使用装饰器模式层层解析节点，最后拼接出来要执行的sql，一般动态sql使用的实现类是**DynamicSqlSource**
 
-  
+执行流程:从MappedStatement的getBoundSql进入找到对应的SqlSource，以DynamicSqlSource为例，调用了SqlNode的apply(context)方法。sqlNode
+
