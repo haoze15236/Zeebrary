@@ -19,7 +19,7 @@ make
 # 配置文件
 
 ```
-# 修改配置文件/conf
+# 修改配置文件redis.conf
 daemonize yes  #后台启动
 protected-mode no  #关闭保护模式，开启的话，只有本机才可以访问redis
 # 需要注释掉bind
