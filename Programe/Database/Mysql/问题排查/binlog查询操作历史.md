@@ -28,18 +28,18 @@
   echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>查询结果" >> z_grep.log
   echo "begin ..."
   echo $path >> z_grep.log
-  # 需要搜索出AD_ADVERTISEMENT表的AD_LINK字段的值为ad_init_user的记录，记录到总日志z_grep.log
+  # 需要搜索出csh_repayment_register_dist表的记录，记录到总日志z_grep.log
   mysqlbinlog --base64-output=DECODE-ROWS -v $path |grep -i -C 100 delete |grep -C 100 csh_repayment_register_dist >> z_grep.log
   echo "end." >>z_grep.log
   done
   
-
-  #另一个mysqlbinlog查看日志语句
-mysqlbinlog --no-defaults  --base64-output=decode-rows  -v /tmp/haoze/mmysqlbinlog  --no-defaults  --base64-output=decode-rows  -v /tmp/haoze/mysql-bin.002505|sed -n '/###fnd_dimension_value v/,/COMMIT/p' > /tmp/delete.txtysql-bin.002505 | sed -n '/### DELETE FROM `hap_prod`.`fnd_dimension_value`/,/COMMIT/P' | sed -n 's\### \\p' | sed "s/\/\*.*\*\///g" | sed 's/`//g' > /tmp/1.txt
+  
+  #另一个mysqlbinlog查看日志语句-查看维值删除的语句
+  mysqlbinlog --no-defaults  --base64-output=decode-rows  -v /tmp/haoze/mmysqlbinlog  --no-defaults  --base64-output=decode-rows  -v /tmp/haoze/mysql-bin.002505|sed -n '/###fnd_dimension_value v/,/COMMIT/p' > /tmp/delete.txtysql-bin.002505 | sed -n '/### DELETE FROM `hap_prod`.`fnd_dimension_value`/,/COMMIT/P' | sed -n 's\### \\p' | sed "s/\/\*.*\*\///g" | sed 's/`//g' > /tmp/1.txt
   #进入mysql命令行可以通过内置表查看binlog
   show binlog events in 'mysql-bin.002505' from 56326173 limit 10
   #重复执行binlog事务
-mysqlbinlog --start-position=36506331 --stop-position=56326204 /tmp/haoze/mysql-bin.002505|mysql -uroot -p xinchaoDB2020!@#
+  mysqlbinlog --start-position=36506331 --stop-position=56326204 /tmp/haoze/mysql-bin.002505|mysql -uroot -p xinchaoDB2020!@#
   ```
 
   - 执行脚本vim
@@ -260,17 +260,10 @@ mysqlbinlog --start-position=36506331 --stop-position=56326204 /tmp/haoze/mysql-
   # at 51491693
   # at 51492597
   #210302 13:48:01 server id 2  end_log_pos 51492761 CRC32 0x104f36b1 	Table_map: `hap_prod`.`cux_doc_audit_return_itf` mapped to number 3165294
-# at 51492761
+  at 51492761
   #210302 13:48:01 server id 2  end_log_pos 51493186 CRC32 0x94ace208 	Update_rows: table id 3165294 flags: STMT_END_F
   ### UPDATE `hap_prod`.`cux_doc_audit_return_itf`
   ### WHERE
   ###   @1=157368
   ###   @2=NULL
-  end.
-  ```
-  
-  
-
-
-
-​		
+  end.		
